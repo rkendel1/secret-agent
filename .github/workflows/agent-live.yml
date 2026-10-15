@@ -6,6 +6,9 @@ name: agent-live
 on:
   workflow_dispatch:
     inputs:
+      legs:
+        description: Which legs to run (comma-separated) - gateway, remote, local
+        default: gateway
       trials:
         description: Trials per arm and project
         default: "10"
@@ -21,6 +24,7 @@ on:
 
 jobs:
   local:
+    if: contains(inputs.legs, 'local')
     runs-on: ubuntu-latest
     timeout-minutes: 300
     steps:
@@ -45,6 +49,7 @@ jobs:
           path: target/closed-loop
 
   remote:
+    if: contains(inputs.legs, 'remote')
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
@@ -70,6 +75,7 @@ jobs:
 
   gateway:
     # The same evaluation through the Vercel AI Gateway (OpenAI-compatible API).
+    if: contains(inputs.legs, 'gateway')
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
