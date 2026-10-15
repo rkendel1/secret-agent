@@ -1,0 +1,246 @@
+{
+  "application": "com.example.orders",
+  "nodes": [
+    {
+      "id": "application:com.example.inventory",
+      "kind": "application",
+      "application": "com.example.inventory",
+      "resolved": false
+    },
+    {
+      "id": "application:com.example.orders",
+      "kind": "application",
+      "application": "com.example.orders",
+      "resolved": true
+    },
+    {
+      "id": "capability:com.example.inventory/inventory.reserve@1",
+      "kind": "capability",
+      "application": "com.example.inventory",
+      "resolved": false
+    },
+    {
+      "id": "capability:com.example.notifications/notifications.send@2",
+      "kind": "capability",
+      "application": "com.example.notifications",
+      "resolved": false
+    },
+    {
+      "id": "capability:com.example.orders/appport.manifest@1",
+      "kind": "capability",
+      "application": "com.example.orders",
+      "resolved": true
+    },
+    {
+      "id": "capability:com.example.orders/appport.ping@1",
+      "kind": "capability",
+      "application": "com.example.orders",
+      "resolved": true
+    },
+    {
+      "id": "capability:com.example.orders/orders.byref@1",
+      "kind": "capability",
+      "application": "com.example.orders",
+      "resolved": true
+    },
+    {
+      "id": "capability:com.example.orders/orders.cancel@1",
+      "kind": "capability",
+      "application": "com.example.orders",
+      "resolved": true
+    },
+    {
+      "id": "capability:com.example.orders/orders.get@1",
+      "kind": "capability",
+      "application": "com.example.orders",
+      "resolved": true
+    },
+    {
+      "id": "capability:com.example.orders/orders.place@1",
+      "kind": "capability",
+      "application": "com.example.orders",
+      "resolved": true
+    },
+    {
+      "id": "event:com.example.orders/orders.placed",
+      "kind": "event",
+      "application": "com.example.orders",
+      "resolved": true
+    },
+    {
+      "id": "event:com.example.pricing/pricing.changed",
+      "kind": "event",
+      "application": "com.example.pricing",
+      "resolved": false
+    },
+    {
+      "id": "resource:urn:example:inventory:stock",
+      "kind": "resource",
+      "application": "com.example.inventory",
+      "resolved": true
+    },
+    {
+      "id": "resource:urn:example:orders:order",
+      "kind": "resource",
+      "application": "com.example.orders",
+      "resolved": true
+    }
+  ],
+  "edges": [
+    {
+      "from": "application:com.example.inventory",
+      "to": "resource:urn:example:inventory:stock",
+      "kind": "owns"
+    },
+    {
+      "from": "application:com.example.orders",
+      "to": "capability:com.example.notifications/notifications.send@2",
+      "kind": "delegates",
+      "required": false,
+      "via": "notify"
+    },
+    {
+      "from": "application:com.example.orders",
+      "to": "capability:com.example.orders/appport.manifest@1",
+      "kind": "declares"
+    },
+    {
+      "from": "application:com.example.orders",
+      "to": "capability:com.example.orders/appport.ping@1",
+      "kind": "declares"
+    },
+    {
+      "from": "application:com.example.orders",
+      "to": "capability:com.example.orders/orders.byref@1",
+      "kind": "declares"
+    },
+    {
+      "from": "application:com.example.orders",
+      "to": "capability:com.example.orders/orders.cancel@1",
+      "kind": "declares"
+    },
+    {
+      "from": "application:com.example.orders",
+      "to": "capability:com.example.orders/orders.get@1",
+      "kind": "declares"
+    },
+    {
+      "from": "application:com.example.orders",
+      "to": "capability:com.example.orders/orders.place@1",
+      "kind": "declares"
+    },
+    {
+      "from": "application:com.example.orders",
+      "to": "resource:urn:example:orders:order",
+      "kind": "owns"
+    },
+    {
+      "from": "capability:com.example.orders/orders.byref@1",
+      "to": "resource:urn:example:orders:order",
+      "kind": "reads"
+    },
+    {
+      "from": "capability:com.example.orders/orders.cancel@1",
+      "to": "capability:com.example.orders/orders.get@1",
+      "kind": "observes",
+      "required": true,
+      "via": "read-back"
+    },
+    {
+      "from": "capability:com.example.orders/orders.cancel@1",
+      "to": "capability:com.example.orders/orders.get@1",
+      "kind": "verified-by",
+      "via": "order-cancelled"
+    },
+    {
+      "from": "capability:com.example.orders/orders.cancel@1",
+      "to": "capability:com.example.orders/orders.get@1",
+      "kind": "checked-by",
+      "via": "exists"
+    },
+    {
+      "from": "capability:com.example.orders/orders.cancel@1",
+      "to": "resource:urn:example:orders:order",
+      "kind": "changes",
+      "operations": [
+        "update"
+      ]
+    },
+    {
+      "from": "capability:com.example.orders/orders.get@1",
+      "to": "resource:urn:example:orders:order",
+      "kind": "reads"
+    },
+    {
+      "from": "capability:com.example.orders/orders.place@1",
+      "to": "capability:com.example.inventory/inventory.reserve@1",
+      "kind": "invokes",
+      "required": true,
+      "via": "stock"
+    },
+    {
+      "from": "capability:com.example.orders/orders.place@1",
+      "to": "capability:com.example.orders/orders.byref@1",
+      "kind": "checked-by",
+      "via": "no-duplicate"
+    },
+    {
+      "from": "capability:com.example.orders/orders.place@1",
+      "to": "capability:com.example.orders/orders.get@1",
+      "kind": "observes",
+      "required": false,
+      "via": "lookup"
+    },
+    {
+      "from": "capability:com.example.orders/orders.place@1",
+      "to": "capability:com.example.orders/orders.get@1",
+      "kind": "verified-by",
+      "via": "order-exists"
+    },
+    {
+      "from": "capability:com.example.orders/orders.place@1",
+      "to": "event:com.example.orders/orders.placed",
+      "kind": "emits"
+    },
+    {
+      "from": "capability:com.example.orders/orders.place@1",
+      "to": "event:com.example.pricing/pricing.changed",
+      "kind": "consumes-event",
+      "required": false,
+      "via": "pricing"
+    },
+    {
+      "from": "capability:com.example.orders/orders.place@1",
+      "to": "resource:urn:example:inventory:stock",
+      "kind": "changes",
+      "operations": [
+        "update"
+      ]
+    },
+    {
+      "from": "capability:com.example.orders/orders.place@1",
+      "to": "resource:urn:example:orders:order",
+      "kind": "changes",
+      "operations": [
+        "create"
+      ]
+    }
+  ],
+  "unresolved": [
+    {
+      "from": "application:com.example.orders",
+      "target": "capability:com.example.notifications/notifications.send@2",
+      "reason": "capability of another application"
+    },
+    {
+      "from": "capability:com.example.orders/orders.place@1",
+      "target": "capability:com.example.inventory/inventory.reserve@1",
+      "reason": "capability of another application"
+    },
+    {
+      "from": "capability:com.example.orders/orders.place@1",
+      "target": "event:com.example.pricing/pricing.changed",
+      "reason": "event of another application"
+    }
+  ]
+}

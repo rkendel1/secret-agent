@@ -1,0 +1,1316 @@
+{
+  "validateName": [
+    {
+      "input": "documents.save",
+      "result": {
+        "valid": true
+      }
+    },
+    {
+      "input": "documents",
+      "result": {
+        "valid": false,
+        "reason": "name must be lowercase <namespace>.<operation> using ASCII letters and digits"
+      }
+    },
+    {
+      "input": "Documents.save",
+      "result": {
+        "valid": false,
+        "reason": "name must be lowercase <namespace>.<operation> using ASCII letters and digits"
+      }
+    },
+    {
+      "input": "a.b.c",
+      "result": {
+        "valid": true
+      }
+    },
+    {
+      "input": "http.get",
+      "result": {
+        "valid": false,
+        "reason": "name must not contain the transport segment \"http\""
+      }
+    },
+    {
+      "input": "documents.http",
+      "result": {
+        "valid": false,
+        "reason": "name must not contain the transport segment \"http\""
+      }
+    },
+    {
+      "input": "d1.x2",
+      "result": {
+        "valid": true
+      }
+    },
+    {
+      "input": "1a.b",
+      "result": {
+        "valid": false,
+        "reason": "name must be lowercase <namespace>.<operation> using ASCII letters and digits"
+      }
+    },
+    {
+      "input": "a..b",
+      "result": {
+        "valid": false,
+        "reason": "name must be lowercase <namespace>.<operation> using ASCII letters and digits"
+      }
+    },
+    {
+      "input": "a.b.",
+      "result": {
+        "valid": false,
+        "reason": "name must be lowercase <namespace>.<operation> using ASCII letters and digits"
+      }
+    },
+    {
+      "input": ".a.b",
+      "result": {
+        "valid": false,
+        "reason": "name must be lowercase <namespace>.<operation> using ASCII letters and digits"
+      }
+    },
+    {
+      "input": "docs.inprocess",
+      "result": {
+        "valid": false,
+        "reason": "name must not contain the transport segment \"inprocess\""
+      }
+    },
+    {
+      "input": "a.b-c",
+      "result": {
+        "valid": false,
+        "reason": "name must be lowercase <namespace>.<operation> using ASCII letters and digits"
+      }
+    },
+    {
+      "input": "a.b_c",
+      "result": {
+        "valid": false,
+        "reason": "name must be lowercase <namespace>.<operation> using ASCII letters and digits"
+      }
+    },
+    {
+      "input": "",
+      "result": {
+        "valid": false,
+        "reason": "name must be a non-empty string"
+      }
+    },
+    {
+      "input": "x.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "result": {
+        "valid": true
+      }
+    },
+    {
+      "input": "x.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "result": {
+        "valid": false,
+        "reason": "name must be at most 128 characters"
+      }
+    },
+    {
+      "input": "orders.v2.place",
+      "result": {
+        "valid": true
+      }
+    },
+    {
+      "input": "grpcx.call",
+      "result": {
+        "valid": true
+      }
+    },
+    {
+      "input": "a.rest",
+      "result": {
+        "valid": false,
+        "reason": "name must not contain the transport segment \"rest\""
+      }
+    }
+  ],
+  "isValidPermission": [
+    {
+      "input": "documents.save",
+      "result": true
+    },
+    {
+      "input": "documents",
+      "result": false
+    },
+    {
+      "input": "Documents.save",
+      "result": false
+    },
+    {
+      "input": "a.b.c",
+      "result": true
+    },
+    {
+      "input": "http.get",
+      "result": true
+    },
+    {
+      "input": "documents.http",
+      "result": true
+    },
+    {
+      "input": "d1.x2",
+      "result": true
+    },
+    {
+      "input": "1a.b",
+      "result": false
+    },
+    {
+      "input": "a..b",
+      "result": false
+    },
+    {
+      "input": "a.b.",
+      "result": false
+    },
+    {
+      "input": ".a.b",
+      "result": false
+    },
+    {
+      "input": "docs.inprocess",
+      "result": true
+    },
+    {
+      "input": "a.b-c",
+      "result": false
+    },
+    {
+      "input": "a.b_c",
+      "result": false
+    },
+    {
+      "input": "",
+      "result": false
+    },
+    {
+      "input": "x.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "result": true
+    },
+    {
+      "input": "x.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "result": true
+    },
+    {
+      "input": "orders.v2.place",
+      "result": true
+    },
+    {
+      "input": "grpcx.call",
+      "result": true
+    },
+    {
+      "input": "a.rest",
+      "result": true
+    }
+  ],
+  "isValidApplicationId": [
+    {
+      "input": "com.example.sherpa",
+      "result": true
+    },
+    {
+      "input": "com.example",
+      "result": true
+    },
+    {
+      "input": "com",
+      "result": false
+    },
+    {
+      "input": "com.Example",
+      "result": false
+    },
+    {
+      "input": "com.example.my-app",
+      "result": true
+    },
+    {
+      "input": "com.1x",
+      "result": true
+    },
+    {
+      "input": "com.-x",
+      "result": false
+    },
+    {
+      "input": "com.x-",
+      "result": true
+    },
+    {
+      "input": "dev.appport.testfixture",
+      "result": true
+    },
+    {
+      "input": "a.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "result": true
+    },
+    {
+      "input": "a.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "result": true
+    },
+    {
+      "input": "com..x",
+      "result": false
+    },
+    {
+      "input": "1com.x",
+      "result": false
+    }
+  ],
+  "parseCapabilityRef": [
+    {
+      "input": "documents.save@1",
+      "result": {
+        "name": "documents.save",
+        "version": 1
+      }
+    },
+    {
+      "input": "documents.save@0",
+      "result": null
+    },
+    {
+      "input": "documents.save@1.5",
+      "result": null
+    },
+    {
+      "input": "documents.save",
+      "result": null
+    },
+    {
+      "input": "http.get@1",
+      "result": null
+    },
+    {
+      "input": "documents.save@01",
+      "result": {
+        "name": "documents.save",
+        "version": 1
+      }
+    },
+    {
+      "input": "documents.save@ 2",
+      "result": {
+        "name": "documents.save",
+        "version": 2
+      }
+    },
+    {
+      "input": "documents.save@2 ",
+      "result": {
+        "name": "documents.save",
+        "version": 2
+      }
+    },
+    {
+      "input": "a.b@2@3",
+      "result": null
+    },
+    {
+      "input": "documents.save@",
+      "result": null
+    },
+    {
+      "input": "documents.save@1e1",
+      "result": {
+        "name": "documents.save",
+        "version": 10
+      }
+    },
+    {
+      "input": "documents.save@0x2",
+      "result": {
+        "name": "documents.save",
+        "version": 2
+      }
+    },
+    {
+      "input": "documents.save@-1",
+      "result": null
+    },
+    {
+      "input": "documents.save@+3",
+      "result": {
+        "name": "documents.save",
+        "version": 3
+      }
+    },
+    {
+      "input": "documents.save@1.0",
+      "result": {
+        "name": "documents.save",
+        "version": 1
+      }
+    },
+    {
+      "input": "documents.save@Infinity",
+      "result": null
+    },
+    {
+      "input": "documents.save@0b11",
+      "result": {
+        "name": "documents.save",
+        "version": 3
+      }
+    },
+    {
+      "input": "documents.save@9007199254740993",
+      "result": {
+        "name": "documents.save",
+        "version": 9007199254740992
+      }
+    },
+    {
+      "input": "@1",
+      "result": null
+    },
+    {
+      "input": "documents.save@\t4\n",
+      "result": {
+        "name": "documents.save",
+        "version": 4
+      }
+    },
+    {
+      "input": "documents.save@1_0",
+      "result": null
+    }
+  ],
+  "isVersionConstraint": [
+    {
+      "input": "1",
+      "result": true
+    },
+    {
+      "input": "^1",
+      "result": true
+    },
+    {
+      "input": "~1.2",
+      "result": true
+    },
+    {
+      "input": ">=2",
+      "result": true
+    },
+    {
+      "input": ">1",
+      "result": true
+    },
+    {
+      "input": "<=2",
+      "result": true
+    },
+    {
+      "input": "<2",
+      "result": true
+    },
+    {
+      "input": "1.2.3",
+      "result": true
+    },
+    {
+      "input": " ^1 ",
+      "result": true
+    },
+    {
+      "input": "v1",
+      "result": false
+    },
+    {
+      "input": "^",
+      "result": false
+    },
+    {
+      "input": "=1",
+      "result": false
+    },
+    {
+      "input": "^1.x",
+      "result": false
+    },
+    {
+      "input": "",
+      "result": false
+    },
+    {
+      "input": ">= 2",
+      "result": false
+    },
+    {
+      "input": "~0",
+      "result": true
+    },
+    {
+      "input": "^10",
+      "result": true
+    },
+    {
+      "input": "<1",
+      "result": true
+    }
+  ],
+  "satisfiesVersionConstraint": [
+    {
+      "version": 0,
+      "constraint": "1",
+      "result": false
+    },
+    {
+      "version": 1,
+      "constraint": "1",
+      "result": true
+    },
+    {
+      "version": 2,
+      "constraint": "1",
+      "result": false
+    },
+    {
+      "version": 3,
+      "constraint": "1",
+      "result": false
+    },
+    {
+      "version": 10,
+      "constraint": "1",
+      "result": false
+    },
+    {
+      "version": 11,
+      "constraint": "1",
+      "result": false
+    },
+    {
+      "version": 0,
+      "constraint": "^1",
+      "result": false
+    },
+    {
+      "version": 1,
+      "constraint": "^1",
+      "result": true
+    },
+    {
+      "version": 2,
+      "constraint": "^1",
+      "result": false
+    },
+    {
+      "version": 3,
+      "constraint": "^1",
+      "result": false
+    },
+    {
+      "version": 10,
+      "constraint": "^1",
+      "result": false
+    },
+    {
+      "version": 11,
+      "constraint": "^1",
+      "result": false
+    },
+    {
+      "version": 0,
+      "constraint": "~1.2",
+      "result": false
+    },
+    {
+      "version": 1,
+      "constraint": "~1.2",
+      "result": true
+    },
+    {
+      "version": 2,
+      "constraint": "~1.2",
+      "result": false
+    },
+    {
+      "version": 3,
+      "constraint": "~1.2",
+      "result": false
+    },
+    {
+      "version": 10,
+      "constraint": "~1.2",
+      "result": false
+    },
+    {
+      "version": 11,
+      "constraint": "~1.2",
+      "result": false
+    },
+    {
+      "version": 0,
+      "constraint": ">=2",
+      "result": false
+    },
+    {
+      "version": 1,
+      "constraint": ">=2",
+      "result": false
+    },
+    {
+      "version": 2,
+      "constraint": ">=2",
+      "result": true
+    },
+    {
+      "version": 3,
+      "constraint": ">=2",
+      "result": true
+    },
+    {
+      "version": 10,
+      "constraint": ">=2",
+      "result": true
+    },
+    {
+      "version": 11,
+      "constraint": ">=2",
+      "result": true
+    },
+    {
+      "version": 0,
+      "constraint": ">1",
+      "result": false
+    },
+    {
+      "version": 1,
+      "constraint": ">1",
+      "result": false
+    },
+    {
+      "version": 2,
+      "constraint": ">1",
+      "result": true
+    },
+    {
+      "version": 3,
+      "constraint": ">1",
+      "result": true
+    },
+    {
+      "version": 10,
+      "constraint": ">1",
+      "result": true
+    },
+    {
+      "version": 11,
+      "constraint": ">1",
+      "result": true
+    },
+    {
+      "version": 0,
+      "constraint": "<=2",
+      "result": true
+    },
+    {
+      "version": 1,
+      "constraint": "<=2",
+      "result": true
+    },
+    {
+      "version": 2,
+      "constraint": "<=2",
+      "result": true
+    },
+    {
+      "version": 3,
+      "constraint": "<=2",
+      "result": false
+    },
+    {
+      "version": 10,
+      "constraint": "<=2",
+      "result": false
+    },
+    {
+      "version": 11,
+      "constraint": "<=2",
+      "result": false
+    },
+    {
+      "version": 0,
+      "constraint": "<2",
+      "result": true
+    },
+    {
+      "version": 1,
+      "constraint": "<2",
+      "result": true
+    },
+    {
+      "version": 2,
+      "constraint": "<2",
+      "result": false
+    },
+    {
+      "version": 3,
+      "constraint": "<2",
+      "result": false
+    },
+    {
+      "version": 10,
+      "constraint": "<2",
+      "result": false
+    },
+    {
+      "version": 11,
+      "constraint": "<2",
+      "result": false
+    },
+    {
+      "version": 0,
+      "constraint": "1.2.3",
+      "result": false
+    },
+    {
+      "version": 1,
+      "constraint": "1.2.3",
+      "result": true
+    },
+    {
+      "version": 2,
+      "constraint": "1.2.3",
+      "result": false
+    },
+    {
+      "version": 3,
+      "constraint": "1.2.3",
+      "result": false
+    },
+    {
+      "version": 10,
+      "constraint": "1.2.3",
+      "result": false
+    },
+    {
+      "version": 11,
+      "constraint": "1.2.3",
+      "result": false
+    },
+    {
+      "version": 0,
+      "constraint": " ^1 ",
+      "result": false
+    },
+    {
+      "version": 1,
+      "constraint": " ^1 ",
+      "result": true
+    },
+    {
+      "version": 2,
+      "constraint": " ^1 ",
+      "result": false
+    },
+    {
+      "version": 3,
+      "constraint": " ^1 ",
+      "result": false
+    },
+    {
+      "version": 10,
+      "constraint": " ^1 ",
+      "result": false
+    },
+    {
+      "version": 11,
+      "constraint": " ^1 ",
+      "result": false
+    },
+    {
+      "version": 0,
+      "constraint": "~0",
+      "result": true
+    },
+    {
+      "version": 1,
+      "constraint": "~0",
+      "result": false
+    },
+    {
+      "version": 2,
+      "constraint": "~0",
+      "result": false
+    },
+    {
+      "version": 3,
+      "constraint": "~0",
+      "result": false
+    },
+    {
+      "version": 10,
+      "constraint": "~0",
+      "result": false
+    },
+    {
+      "version": 11,
+      "constraint": "~0",
+      "result": false
+    },
+    {
+      "version": 0,
+      "constraint": "^10",
+      "result": false
+    },
+    {
+      "version": 1,
+      "constraint": "^10",
+      "result": false
+    },
+    {
+      "version": 2,
+      "constraint": "^10",
+      "result": false
+    },
+    {
+      "version": 3,
+      "constraint": "^10",
+      "result": false
+    },
+    {
+      "version": 10,
+      "constraint": "^10",
+      "result": true
+    },
+    {
+      "version": 11,
+      "constraint": "^10",
+      "result": false
+    },
+    {
+      "version": 0,
+      "constraint": "<1",
+      "result": true
+    },
+    {
+      "version": 1,
+      "constraint": "<1",
+      "result": false
+    },
+    {
+      "version": 2,
+      "constraint": "<1",
+      "result": false
+    },
+    {
+      "version": 3,
+      "constraint": "<1",
+      "result": false
+    },
+    {
+      "version": 10,
+      "constraint": "<1",
+      "result": false
+    },
+    {
+      "version": 11,
+      "constraint": "<1",
+      "result": false
+    }
+  ],
+  "parseDependencyRef": [
+    {
+      "input": "orders.get",
+      "result": {
+        "name": "orders.get"
+      }
+    },
+    {
+      "input": "orders.get@1",
+      "result": {
+        "name": "orders.get",
+        "version": 1
+      }
+    },
+    {
+      "input": "orders.get@0",
+      "result": null
+    },
+    {
+      "input": "orders.get@01",
+      "result": null
+    },
+    {
+      "input": "Orders.get",
+      "result": null
+    },
+    {
+      "input": "orders@1",
+      "result": null
+    },
+    {
+      "input": "orders.get@1.0",
+      "result": null
+    },
+    {
+      "input": "orders.get@12",
+      "result": {
+        "name": "orders.get",
+        "version": 12
+      }
+    },
+    {
+      "input": "a.b.c@3",
+      "result": {
+        "name": "a.b.c",
+        "version": 3
+      }
+    },
+    {
+      "input": "http.get@1",
+      "result": {
+        "name": "http.get",
+        "version": 1
+      }
+    }
+  ],
+  "isDigest": [
+    {
+      "input": "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "result": true
+    },
+    {
+      "input": "sha256:0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+      "result": false
+    },
+    {
+      "input": "sha256:abc",
+      "result": false
+    },
+    {
+      "input": "sha1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "result": false
+    },
+    {
+      "input": "sha256:gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
+      "result": false
+    },
+    {
+      "input": "SHA256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "result": false
+    }
+  ],
+  "canonicalize": [
+    {
+      "value": null,
+      "canonical": "null",
+      "digest": "sha256:74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "value": true,
+      "canonical": "true",
+      "digest": "sha256:b5bea41b6c623f7c09f1bf24dcae58ebab3c0cdd90ad966bc43a45b44867e12b"
+    },
+    {
+      "value": 0,
+      "canonical": "0",
+      "digest": "sha256:5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+    },
+    {
+      "value": 0,
+      "canonical": "0",
+      "digest": "sha256:5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+    },
+    {
+      "value": 1,
+      "canonical": "1",
+      "digest": "sha256:6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+    },
+    {
+      "value": -1,
+      "canonical": "-1",
+      "digest": "sha256:1bad6b8cf97131fceab8543e81f7757195fbb1d36b376ee994ad1cf17699c464"
+    },
+    {
+      "value": 0.1,
+      "canonical": "0.1",
+      "digest": "sha256:14be4b45f18e0d8c67b4f719b5144eee88497e413709d11d85b096d8e2346310"
+    },
+    {
+      "value": 1.5,
+      "canonical": "1.5",
+      "digest": "sha256:9f29a130438b81170b92a42650f9a94291ecad60bd47af2a3886e75f7f728725"
+    },
+    {
+      "value": 1e+21,
+      "canonical": "1e+21",
+      "digest": "sha256:241c4643fa70b1dcde1205b71be4e3bebb17e9f880c8e1a33d0ead6c27271d3c"
+    },
+    {
+      "value": 1e-7,
+      "canonical": "1e-7",
+      "digest": "sha256:5b33e02f2c5103a05d32f6ba9cb058294452bfbf393967f68bb30c1bdcbbab22"
+    },
+    {
+      "value": 123456789012345680000,
+      "canonical": "123456789012345680000",
+      "digest": "sha256:725abf175290195635e55a971cf88e02a46d6d56e964ec2d8bc47614b9559062"
+    },
+    {
+      "value": 5e-324,
+      "canonical": "5e-324",
+      "digest": "sha256:c46e7ca1be4c8734f373a56530787288fa2058d73d07855e9247e949f811a42a"
+    },
+    {
+      "value": 1.7976931348623157e+308,
+      "canonical": "1.7976931348623157e+308",
+      "digest": "sha256:c2784e1abd6317452708f3fbf9641c16b959561bc621a1d408c23a20aa2cb585"
+    },
+    {
+      "value": 9007199254740992,
+      "canonical": "9007199254740992",
+      "digest": "sha256:c681da39d7273a6a24c15c9cac3a75526ff2ecf8ba4ee60346a0c70c8163bdb2"
+    },
+    {
+      "value": 0.30000000000000004,
+      "canonical": "0.30000000000000004",
+      "digest": "sha256:06bad31060c1212ae832de4c031f7b31e3b48aed57858294478cb19450cf34ca"
+    },
+    {
+      "value": "plain",
+      "canonical": "\"plain\"",
+      "digest": "sha256:945603a8f587786b463c3f94fce115c0fae88fac2728cc96ddf5981cf7f61741"
+    },
+    {
+      "value": "quote \" backslash \\ slash /",
+      "canonical": "\"quote \\\" backslash \\\\ slash /\"",
+      "digest": "sha256:0bf8d8cac25a2ba37fc6ddcfeb6e43572799b87ebf390873fd7a7dd22447b0a1"
+    },
+    {
+      "value": "control \u0001\u001f\b\f\n\r\t",
+      "canonical": "\"control \\u0001\\u001f\\b\\f\\n\\r\\t\"",
+      "digest": "sha256:d22620d57739063099a0f213465a7c16fc7ad063eeeca706e5f1131b086d3897"
+    },
+    {
+      "value": "unicode é € 😀",
+      "canonical": "\"unicode é € 😀\"",
+      "digest": "sha256:87b049f1f8e2f0baca79cc9c73f8aa6aad688e5530a46340f8180269ae2fe6c4"
+    },
+    {
+      "value": "  ",
+      "canonical": "\"  \"",
+      "digest": "sha256:e3a0e2262ac7790f4df36b522a8fbdd4ee3370d568eb15dc25c5f1775f14ed6c"
+    },
+    {
+      "value": [],
+      "canonical": "[]",
+      "digest": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "value": {},
+      "canonical": "{}",
+      "digest": "sha256:44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    {
+      "value": [
+        1,
+        [
+          2,
+          [
+            3
+          ]
+        ]
+      ],
+      "canonical": "[1,[2,[3]]]",
+      "digest": "sha256:515b8578d7e3f9401f4013b481191a4df6373a4b37fc3e565abd5085344c927f"
+    },
+    {
+      "value": {
+        "b": 1,
+        "a": 2,
+        "A": 3,
+        "": 4,
+        "aa": 5
+      },
+      "canonical": "{\"\":4,\"A\":3,\"a\":2,\"aa\":5,\"b\":1}",
+      "digest": "sha256:f82edd58e0fbe7589c009aa81b03d24deff5dbc5d4b2ea59801f8916b5c933ee"
+    },
+    {
+      "value": {
+        "é": 1,
+        "e": 2,
+        "😀": 3,
+        "￿": 4,
+        "": 5,
+        "": 6
+      },
+      "canonical": "{\"e\":2,\"\":6,\"é\":1,\"😀\":3,\"\":5,\"￿\":4}",
+      "digest": "sha256:5a2aea29a704ef5f779e98f893875a3cd2f87718ae9bd0dcbb279103b659dbd6"
+    },
+    {
+      "value": {
+        "nested": {
+          "z": [
+            true,
+            false,
+            null
+          ],
+          "y": {
+            "x": 1.25
+          }
+        }
+      },
+      "canonical": "{\"nested\":{\"y\":{\"x\":1.25},\"z\":[true,false,null]}}",
+      "digest": "sha256:161bca0eb9bba77bc5e4571c2ea85180c749d5259cdc168d96d7b3ea770b8a09"
+    }
+  ],
+  "validateSemanticAnnotations": [
+    {
+      "schema": {
+        "x-appport-concept": "https://schema.example.com/A"
+      },
+      "issues": []
+    },
+    {
+      "schema": {
+        "x-appport-concept": "not an iri"
+      },
+      "issues": [
+        {
+          "path": "",
+          "message": "x-appport-concept must be an absolute IRI"
+        }
+      ]
+    },
+    {
+      "schema": {
+        "x-appport-concept": "urn:x"
+      },
+      "issues": []
+    },
+    {
+      "schema": {
+        "x-appport-concept": 7
+      },
+      "issues": [
+        {
+          "path": "",
+          "message": "x-appport-concept must be an absolute IRI"
+        }
+      ]
+    },
+    {
+      "schema": {
+        "x-appport-unit": "h"
+      },
+      "issues": []
+    },
+    {
+      "schema": {
+        "x-appport-unit": "per hour"
+      },
+      "issues": [
+        {
+          "path": "",
+          "message": "x-appport-unit must be a non-empty unit code without whitespace"
+        }
+      ]
+    },
+    {
+      "schema": {
+        "x-appport-unit": ""
+      },
+      "issues": [
+        {
+          "path": "",
+          "message": "x-appport-unit must be a non-empty unit code without whitespace"
+        }
+      ]
+    },
+    {
+      "schema": {
+        "x-appport-encoding": "iso8601"
+      },
+      "issues": []
+    },
+    {
+      "schema": {
+        "x-appport-encoding": "rfc3339"
+      },
+      "issues": [
+        {
+          "path": "",
+          "message": "x-appport-encoding must be one of: iso8601, epoch-seconds, epoch-milliseconds"
+        }
+      ]
+    },
+    {
+      "schema": {
+        "enum": [
+          "a",
+          "b"
+        ],
+        "x-appport-enum-concepts": {
+          "a": "urn:a",
+          "b": "urn:b"
+        }
+      },
+      "issues": []
+    },
+    {
+      "schema": {
+        "enum": [
+          "a"
+        ],
+        "x-appport-enum-concepts": {
+          "a": "urn:a",
+          "c": "urn:c"
+        }
+      },
+      "issues": [
+        {
+          "path": "",
+          "message": "x-appport-enum-concepts names \"c\", which is not a declared enum value"
+        }
+      ]
+    },
+    {
+      "schema": {
+        "x-appport-enum-concepts": {
+          "a": "urn:a"
+        }
+      },
+      "issues": [
+        {
+          "path": "",
+          "message": "x-appport-enum-concepts requires an enum on the same schema"
+        }
+      ]
+    },
+    {
+      "schema": {
+        "enum": [
+          1,
+          2
+        ],
+        "x-appport-enum-concepts": {
+          "1": "urn:one",
+          "3": "bad iri"
+        }
+      },
+      "issues": [
+        {
+          "path": "",
+          "message": "x-appport-enum-concepts.3 must be an absolute IRI"
+        },
+        {
+          "path": "",
+          "message": "x-appport-enum-concepts names \"3\", which is not a declared enum value"
+        }
+      ]
+    },
+    {
+      "schema": {
+        "enum": [
+          "a"
+        ],
+        "x-appport-enum-concepts": [
+          "urn:a"
+        ]
+      },
+      "issues": [
+        {
+          "path": "",
+          "message": "x-appport-enum-concepts must be an object of enum value → IRI"
+        }
+      ]
+    },
+    {
+      "schema": {
+        "type": "object",
+        "x-vendor-thing": "ignored",
+        "properties": {
+          "when": {
+            "type": "string",
+            "x-appport-encoding": "unix"
+          },
+          "list": {
+            "type": "array",
+            "items": {
+              "x-appport-unit": "a b"
+            }
+          },
+          "choice": {
+            "anyOf": [
+              {
+                "x-appport-concept": "x"
+              },
+              {
+                "oneOf": [
+                  {
+                    "x-appport-concept": "y"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "$defs": {
+          "d": {
+            "allOf": [
+              {
+                "not": {
+                  "x-appport-concept": "z"
+                }
+              }
+            ]
+          }
+        },
+        "additionalProperties": {
+          "x-appport-unit": " "
+        },
+        "propertyNames": {
+          "x-appport-encoding": 1
+        }
+      },
+      "issues": [
+        {
+          "path": "/properties/when",
+          "message": "x-appport-encoding must be one of: iso8601, epoch-seconds, epoch-milliseconds"
+        },
+        {
+          "path": "/properties/list/items",
+          "message": "x-appport-unit must be a non-empty unit code without whitespace"
+        },
+        {
+          "path": "/properties/choice/anyOf/0",
+          "message": "x-appport-concept must be an absolute IRI"
+        },
+        {
+          "path": "/properties/choice/anyOf/1/oneOf/0",
+          "message": "x-appport-concept must be an absolute IRI"
+        },
+        {
+          "path": "/$defs/d/allOf/0/not",
+          "message": "x-appport-concept must be an absolute IRI"
+        },
+        {
+          "path": "/additionalProperties",
+          "message": "x-appport-unit must be a non-empty unit code without whitespace"
+        },
+        {
+          "path": "/propertyNames",
+          "message": "x-appport-encoding must be one of: iso8601, epoch-seconds, epoch-milliseconds"
+        }
+      ]
+    }
+  ]
+}

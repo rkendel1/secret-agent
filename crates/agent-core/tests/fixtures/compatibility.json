@@ -1,0 +1,1023 @@
+{
+  "previous": "reference.manifest.json",
+  "change": "documents.save: drop @2, require documents.admin on @1, add optional input.tags",
+  "report": {
+    "compatible": false,
+    "breaking": [
+      {
+        "severity": "breaking",
+        "kind": "capability.authorization-tightened",
+        "target": "documents.save@1",
+        "message": "now requires permission \"documents.admin\""
+      },
+      {
+        "severity": "breaking",
+        "kind": "capability.version-removed",
+        "target": "documents.save@2",
+        "message": "version 2 was removed"
+      }
+    ],
+    "nonBreaking": [
+      {
+        "severity": "non-breaking",
+        "kind": "input.field-added",
+        "target": "documents.save@1 input.tags",
+        "message": "optional field \"tags\" was added"
+      }
+    ]
+  },
+  "next": {
+    "protocol": "appport/1",
+    "application": {
+      "id": "dev.appport.testfixture",
+      "name": "AppPort Test Fixture",
+      "version": "1.0.0",
+      "description": "The reference application used by the AppPort conformance suite."
+    },
+    "capabilities": [
+      {
+        "name": "appport.manifest",
+        "versions": [
+          1
+        ],
+        "latestVersion": 1,
+        "description": "Returns the application manifest for this deployment.",
+        "kind": "request",
+        "inputSchema": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        },
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "protocol": {
+              "type": "string"
+            },
+            "application": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "version": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": true,
+              "required": [
+                "id",
+                "name",
+                "version"
+              ]
+            },
+            "capabilities": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": {}
+              }
+            },
+            "events": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": {}
+              }
+            },
+            "transports": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": {}
+              }
+            }
+          },
+          "additionalProperties": true,
+          "required": [
+            "protocol",
+            "application",
+            "capabilities",
+            "events",
+            "transports"
+          ],
+          "title": "AppPortManifest"
+        },
+        "authorization": [],
+        "authorizationContract": {
+          "required": false,
+          "public": true
+        },
+        "authorizationVersion": 1,
+        "idempotency": "unsupported",
+        "concurrency": {
+          "mode": "parallel"
+        },
+        "definitions": [
+          {
+            "version": 1,
+            "description": "Returns the application manifest for this deployment.",
+            "kind": "request",
+            "inputSchema": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "protocol": {
+                  "type": "string"
+                },
+                "application": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": true,
+                  "required": [
+                    "id",
+                    "name",
+                    "version"
+                  ]
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": {}
+                  }
+                },
+                "events": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": {}
+                  }
+                },
+                "transports": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": {}
+                  }
+                }
+              },
+              "additionalProperties": true,
+              "required": [
+                "protocol",
+                "application",
+                "capabilities",
+                "events",
+                "transports"
+              ],
+              "title": "AppPortManifest"
+            },
+            "authorization": [],
+            "authorizationContract": {
+              "required": false,
+              "public": true
+            },
+            "authorizationVersion": 1,
+            "idempotency": "unsupported",
+            "concurrency": {
+              "mode": "parallel"
+            }
+          }
+        ]
+      },
+      {
+        "name": "appport.ping",
+        "versions": [
+          1
+        ],
+        "latestVersion": 1,
+        "description": "Liveness probe. Returns the server time.",
+        "kind": "request",
+        "inputSchema": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        },
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "timestamp": {
+              "type": "string",
+              "description": "ISO-8601 timestamp",
+              "format": "date-time"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "timestamp"
+          ]
+        },
+        "authorization": [],
+        "authorizationContract": {
+          "required": false,
+          "public": true
+        },
+        "authorizationVersion": 1,
+        "idempotency": "unsupported",
+        "concurrency": {
+          "mode": "parallel"
+        },
+        "definitions": [
+          {
+            "version": 1,
+            "description": "Liveness probe. Returns the server time.",
+            "kind": "request",
+            "inputSchema": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "timestamp": {
+                  "type": "string",
+                  "description": "ISO-8601 timestamp",
+                  "format": "date-time"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "timestamp"
+              ]
+            },
+            "authorization": [],
+            "authorizationContract": {
+              "required": false,
+              "public": true
+            },
+            "authorizationVersion": 1,
+            "idempotency": "unsupported",
+            "concurrency": {
+              "mode": "parallel"
+            }
+          }
+        ]
+      },
+      {
+        "name": "build.follow",
+        "versions": [
+          1
+        ],
+        "latestVersion": 1,
+        "description": "Streams forever until cancelled, to exercise CANCELLED.",
+        "kind": "stream",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "buildId": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "buildId"
+          ]
+        },
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "line": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "line"
+          ]
+        },
+        "authorization": [
+          "build.execute"
+        ],
+        "authorizationContract": {
+          "required": true,
+          "scopes": [
+            "build.execute"
+          ]
+        },
+        "authorizationVersion": 1,
+        "idempotency": "unsupported",
+        "concurrency": {
+          "mode": "parallel"
+        },
+        "definitions": [
+          {
+            "version": 1,
+            "description": "Streams forever until cancelled, to exercise CANCELLED.",
+            "kind": "stream",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "buildId": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "buildId"
+              ]
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "line"
+              ]
+            },
+            "authorization": [
+              "build.execute"
+            ],
+            "authorizationContract": {
+              "required": true,
+              "scopes": [
+                "build.execute"
+              ]
+            },
+            "authorizationVersion": 1,
+            "idempotency": "unsupported",
+            "concurrency": {
+              "mode": "parallel"
+            },
+            "timeoutMs": 5000
+          }
+        ]
+      },
+      {
+        "name": "build.logs",
+        "versions": [
+          1
+        ],
+        "latestVersion": 1,
+        "description": "Streams build log lines.",
+        "kind": "stream",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "buildId": {
+              "type": "string"
+            },
+            "lines": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "buildId"
+          ]
+        },
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "line": {
+              "type": "string"
+            },
+            "sequence": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "line",
+            "sequence"
+          ]
+        },
+        "authorization": [
+          "build.execute"
+        ],
+        "authorizationContract": {
+          "required": true,
+          "scopes": [
+            "build.execute"
+          ]
+        },
+        "authorizationVersion": 1,
+        "idempotency": "unsupported",
+        "concurrency": {
+          "mode": "parallel"
+        },
+        "definitions": [
+          {
+            "version": 1,
+            "description": "Streams build log lines.",
+            "kind": "stream",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "buildId": {
+                  "type": "string"
+                },
+                "lines": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1000
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "buildId"
+              ]
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "string"
+                },
+                "sequence": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "line",
+                "sequence"
+              ]
+            },
+            "authorization": [
+              "build.execute"
+            ],
+            "authorizationContract": {
+              "required": true,
+              "scopes": [
+                "build.execute"
+              ]
+            },
+            "authorizationVersion": 1,
+            "idempotency": "unsupported",
+            "concurrency": {
+              "mode": "parallel"
+            }
+          }
+        ]
+      },
+      {
+        "name": "documents.explode",
+        "versions": [
+          1
+        ],
+        "latestVersion": 1,
+        "description": "Throws a non-protocol error, to exercise sanitization.",
+        "kind": "request",
+        "inputSchema": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        },
+        "outputSchema": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        },
+        "authorization": [],
+        "authorizationContract": {
+          "required": false,
+          "public": true
+        },
+        "authorizationVersion": 1,
+        "idempotency": "unsupported",
+        "concurrency": {
+          "mode": "parallel"
+        },
+        "definitions": [
+          {
+            "version": 1,
+            "description": "Throws a non-protocol error, to exercise sanitization.",
+            "kind": "request",
+            "inputSchema": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            },
+            "authorization": [],
+            "authorizationContract": {
+              "required": false,
+              "public": true
+            },
+            "authorizationVersion": 1,
+            "idempotency": "unsupported",
+            "concurrency": {
+              "mode": "parallel"
+            }
+          }
+        ]
+      },
+      {
+        "name": "documents.list",
+        "versions": [
+          1
+        ],
+        "latestVersion": 1,
+        "description": "Lists documents visible to the caller.",
+        "kind": "request",
+        "inputSchema": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        },
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "documents": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "version": {
+                    "type": "integer"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "title",
+                  "version"
+                ]
+              }
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "documents"
+          ]
+        },
+        "authorization": [
+          "documents.read"
+        ],
+        "authorizationContract": {
+          "required": true,
+          "scopes": [
+            "documents.read"
+          ]
+        },
+        "authorizationVersion": 1,
+        "idempotency": "unsupported",
+        "concurrency": {
+          "mode": "parallel"
+        },
+        "definitions": [
+          {
+            "version": 1,
+            "description": "Lists documents visible to the caller.",
+            "kind": "request",
+            "inputSchema": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "documents": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "version": {
+                        "type": "integer"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "title",
+                      "version"
+                    ]
+                  }
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "documents"
+              ]
+            },
+            "authorization": [
+              "documents.read"
+            ],
+            "authorizationContract": {
+              "required": true,
+              "scopes": [
+                "documents.read"
+              ]
+            },
+            "authorizationVersion": 1,
+            "idempotency": "unsupported",
+            "concurrency": {
+              "mode": "parallel"
+            }
+          }
+        ]
+      },
+      {
+        "name": "documents.open",
+        "versions": [
+          1
+        ],
+        "latestVersion": 1,
+        "description": "Reads one document.",
+        "kind": "request",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "documentId": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "documentId"
+          ]
+        },
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            },
+            "content": {
+              "type": "string"
+            },
+            "version": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "title",
+            "content",
+            "version"
+          ]
+        },
+        "authorization": [
+          "documents.read"
+        ],
+        "authorizationContract": {
+          "required": true,
+          "scopes": [
+            "documents.read"
+          ]
+        },
+        "authorizationVersion": 1,
+        "idempotency": "unsupported",
+        "concurrency": {
+          "mode": "parallel"
+        },
+        "definitions": [
+          {
+            "version": 1,
+            "description": "Reads one document.",
+            "kind": "request",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "documentId": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "documentId"
+              ]
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "content": {
+                  "type": "string"
+                },
+                "version": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "title",
+                "content",
+                "version"
+              ]
+            },
+            "authorization": [
+              "documents.read"
+            ],
+            "authorizationContract": {
+              "required": true,
+              "scopes": [
+                "documents.read"
+              ]
+            },
+            "authorizationVersion": 1,
+            "idempotency": "unsupported",
+            "concurrency": {
+              "mode": "parallel"
+            }
+          }
+        ]
+      },
+      {
+        "name": "documents.save",
+        "versions": [
+          1
+        ],
+        "latestVersion": 1,
+        "description": "Saves a document, optionally renaming it.",
+        "kind": "request",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "documentId": {
+              "type": "string"
+            },
+            "content": {
+              "type": "string"
+            },
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "documentId",
+            "content"
+          ]
+        },
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "version": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "version"
+          ]
+        },
+        "authorization": [
+          "documents.write",
+          "documents.admin"
+        ],
+        "authorizationContract": {
+          "required": true,
+          "scopes": [
+            "documents.write"
+          ]
+        },
+        "authorizationVersion": 1,
+        "idempotency": "supported",
+        "concurrency": {
+          "mode": "keyed",
+          "key": "documentId"
+        },
+        "definitions": [
+          {
+            "version": 1,
+            "description": "Saves a document and publishes documents.changed.",
+            "kind": "request",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "documentId": {
+                  "type": "string"
+                },
+                "content": {
+                  "type": "string"
+                },
+                "tags": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "documentId",
+                "content"
+              ]
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "version": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "version"
+              ]
+            },
+            "authorization": [
+              "documents.write",
+              "documents.admin"
+            ],
+            "authorizationContract": {
+              "required": true,
+              "scopes": [
+                "documents.write"
+              ]
+            },
+            "authorizationVersion": 1,
+            "idempotency": "supported",
+            "concurrency": {
+              "mode": "keyed",
+              "key": "documentId"
+            },
+            "emits": [
+              "documents.changed"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "documents.slow",
+        "versions": [
+          1
+        ],
+        "latestVersion": 1,
+        "description": "Sleeps past its own deadline, to exercise TIMEOUT.",
+        "kind": "request",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "delayMs": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false
+        },
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "done": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "done"
+          ]
+        },
+        "authorization": [],
+        "authorizationContract": {
+          "required": false,
+          "public": true
+        },
+        "authorizationVersion": 1,
+        "idempotency": "unsupported",
+        "concurrency": {
+          "mode": "parallel"
+        },
+        "definitions": [
+          {
+            "version": 1,
+            "description": "Sleeps past its own deadline, to exercise TIMEOUT.",
+            "kind": "request",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "delayMs": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "done": {
+                  "type": "boolean"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "done"
+              ]
+            },
+            "authorization": [],
+            "authorizationContract": {
+              "required": false,
+              "public": true
+            },
+            "authorizationVersion": 1,
+            "idempotency": "unsupported",
+            "concurrency": {
+              "mode": "parallel"
+            },
+            "timeoutMs": 50
+          }
+        ]
+      }
+    ],
+    "events": [
+      {
+        "name": "documents.changed",
+        "versions": [
+          1
+        ],
+        "latestVersion": 1,
+        "description": "A document was saved.",
+        "payloadSchema": {
+          "type": "object",
+          "properties": {
+            "documentId": {
+              "type": "string"
+            },
+            "version": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "documentId",
+            "version"
+          ]
+        },
+        "authorization": [
+          "documents.read"
+        ],
+        "definitions": [
+          {
+            "version": 1,
+            "description": "A document was saved.",
+            "payloadSchema": {
+              "type": "object",
+              "properties": {
+                "documentId": {
+                  "type": "string"
+                },
+                "version": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "documentId",
+                "version"
+              ]
+            },
+            "authorization": [
+              "documents.read"
+            ]
+          }
+        ]
+      }
+    ],
+    "transports": [],
+    "conformance": 3
+  }
+}

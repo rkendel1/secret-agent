@@ -1,0 +1,148 @@
+{
+  "capability": {
+    "name": "orders.place",
+    "version": 1
+  },
+  "contractPin": "sha256:73a97a5a1d6165e1cc7546641d9e03da0ac804021b285e1fe7de3e58a4912afb",
+  "constraints": [
+    {
+      "code": "identity",
+      "rule": "serve orders.place@1 under the same name and version"
+    },
+    {
+      "code": "kind",
+      "rule": "remain a request capability"
+    },
+    {
+      "code": "input.accept-no-less",
+      "rule": "accept every input the current input schema accepts: add no required field, remove no field, change no field type, narrow no enum, bound or pattern"
+    },
+    {
+      "code": "output.return-no-more",
+      "rule": "return only what the current output schema allows: remove no field consumers receive, change no field type, widen no enum or bound"
+    },
+    {
+      "code": "semantics.identifiers",
+      "rule": "keep every x-appport-* annotation on existing fields unchanged; new annotations are allowed"
+    },
+    {
+      "code": "effect",
+      "rule": "keep the declared effect `consequential`"
+    },
+    {
+      "code": "idempotency",
+      "rule": "keep idempotency `supported`"
+    },
+    {
+      "code": "authorization.no-tightening",
+      "rule": "require no permission beyond orders.write"
+    },
+    {
+      "code": "events",
+      "rule": "keep emitting orders.placed"
+    },
+    {
+      "code": "integration.authority",
+      "rule": "keep the authority `https://schema.example.com/authority/orders`"
+    },
+    {
+      "code": "integration.effects",
+      "rule": "keep the declared effect types https://schema.example.com/effects/order-created, https://schema.example.com/effects/stock-reserved"
+    }
+  ],
+  "dependents": [],
+  "reaches": [
+    {
+      "node": "capability:com.example.inventory/inventory.reserve@1",
+      "relationship": "invokes",
+      "required": true,
+      "via": "stock"
+    },
+    {
+      "node": "capability:com.example.orders/orders.byref@1",
+      "relationship": "checked-by",
+      "via": "no-duplicate"
+    },
+    {
+      "node": "capability:com.example.orders/orders.get@1",
+      "relationship": "observes",
+      "required": false,
+      "via": "lookup"
+    },
+    {
+      "node": "capability:com.example.orders/orders.get@1",
+      "relationship": "verified-by",
+      "via": "order-exists"
+    },
+    {
+      "node": "event:com.example.orders/orders.placed",
+      "relationship": "emits"
+    },
+    {
+      "node": "event:com.example.pricing/pricing.changed",
+      "relationship": "consumes-event",
+      "required": false,
+      "via": "pricing"
+    },
+    {
+      "node": "resource:urn:example:inventory:stock",
+      "relationship": "changes"
+    },
+    {
+      "node": "resource:urn:example:orders:order",
+      "relationship": "changes"
+    }
+  ],
+  "verification": [
+    {
+      "method": "order-exists",
+      "strength": "establishes"
+    },
+    {
+      "method": "placed-event",
+      "strength": "corroborates"
+    }
+  ],
+  "handover": [
+    {
+      "id": "distinct-provider",
+      "rule": "the replacement is a different provider, under its own id",
+      "rejection": "same-provider"
+    },
+    {
+      "id": "source-active",
+      "rule": "the source provider is ACTIVE and is the exact expected registration",
+      "rejection": "from-not-active"
+    },
+    {
+      "id": "target-registered",
+      "rule": "the replacement is REGISTERED (not promoted) and is the exact expected registration",
+      "rejection": "to-not-registered"
+    },
+    {
+      "id": "provides-capability",
+      "rule": "the replacement provides the capability version",
+      "rejection": "capability-not-provided"
+    },
+    {
+      "id": "contract-match",
+      "rule": "the replacement's contract for the capability matches the source's",
+      "rejection": "contract-mismatch"
+    },
+    {
+      "id": "validated",
+      "rule": "the replacement's pending revision has a passing validation for its exact fingerprint",
+      "rejection": "to-not-validated"
+    },
+    {
+      "id": "promotion-checks",
+      "rule": "the gateway's promotion checks pass for the replacement now",
+      "rejection": "promotion-checks-failed"
+    },
+    {
+      "id": "consumer-grants",
+      "rule": "every consumer granted the capability from the source holds its own current grant for the replacement; no grant is copied",
+      "rejection": "replacement-not-authorized"
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+[
+  {
+    "type": "appport.verification-evidence/1",
+    "application": "com.example.orders",
+    "capability": {
+      "name": "orders.place",
+      "version": 1
+    },
+    "requestId": "req_01JABCDEFGHJKMNPQRSTVWXYZ0",
+    "checkedAt": "2026-10-15T12:00:00.000Z",
+    "outcome": "verified",
+    "methods": [
+      {
+        "id": "order-exists",
+        "kind": "state",
+        "status": "confirmed",
+        "probe": {
+          "capability": "orders.get",
+          "version": 1,
+          "requestId": "req_01JABCDEFGHJKMNPQRSTVWXYZ1"
+        }
+      },
+      {
+        "id": "placed-event",
+        "kind": "event",
+        "status": "not-run"
+      }
+    ]
+  },
+  {
+    "type": "appport.verification-evidence/1",
+    "application": "com.example.orders",
+    "capability": {
+      "name": "orders.cancel",
+      "version": 1
+    },
+    "checkedAt": "2026-10-15T12:05:00.000Z",
+    "outcome": "unverified",
+    "methods": [
+      {
+        "id": "order-cancelled",
+        "kind": "state",
+        "status": "contradicted",
+        "probe": {
+          "capability": "orders.get",
+          "version": 1
+        },
+        "mismatches": [
+          {
+            "at": "/status",
+            "expected": "cancelled",
+            "observed": "placed"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "appport.verification-evidence/1",
+    "application": "com.example.orders",
+    "capability": {
+      "name": "orders.cancel",
+      "version": 1
+    },
+    "checkedAt": "2026-10-15T12:06:00.000Z",
+    "outcome": "unverifiable",
+    "methods": [
+      {
+        "id": "order-cancelled",
+        "kind": "state",
+        "status": "unavailable",
+        "errorCode": "FORBIDDEN"
+      }
+    ]
+  }
+]

@@ -1,0 +1,26 @@
+[
+  {
+    "level": "error",
+    "rule": "capability.mirror",
+    "path": "capabilities[3]",
+    "message": "top-level fields of \"orders.cancel\" do not mirror version 1"
+  },
+  {
+    "level": "error",
+    "rule": "authorization.permission",
+    "path": "orders.cancel@1 authorization",
+    "message": "\"Orders.Write\" is not a valid permission (§34)"
+  },
+  {
+    "level": "error",
+    "rule": "authorization.contract",
+    "path": "orders.cancel@1 authorizationContract",
+    "message": "authorizationContract disagrees with authorization"
+  },
+  {
+    "level": "error",
+    "rule": "dependency.version-constraint",
+    "path": "integration.capabilities[\"orders.place@1\"].requires[2].versionConstraint",
+    "message": "\"v1\" is not a valid version constraint"
+  }
+]

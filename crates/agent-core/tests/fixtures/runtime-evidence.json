@@ -1,0 +1,74 @@
+[
+  {
+    "type": "appport.evidence.invocation/1",
+    "observedAt": "2026-10-15T12:00:00.010Z",
+    "invocationId": "inv_01",
+    "traceId": "trace_01",
+    "parentRequestId": "req_01JABCDEFGHJKMNPQRSTVWXYZ0",
+    "caller": {
+      "application": "com.example.orders",
+      "capability": {
+        "name": "orders.place",
+        "version": 1
+      },
+      "attribution": "capability",
+      "requestId": "req_01JABCDEFGHJKMNPQRSTVWXYZ0"
+    },
+    "target": {
+      "application": "com.example.inventory",
+      "capability": {
+        "name": "inventory.reserve",
+        "version": 1
+      }
+    },
+    "outcome": "success"
+  },
+  {
+    "type": "appport.evidence.invocation/1",
+    "observedAt": "2026-10-15T12:00:00.020Z",
+    "invocationId": "inv_02",
+    "caller": {
+      "application": "com.example.orders",
+      "attribution": "application-only"
+    },
+    "target": {
+      "application": "com.example.notifications",
+      "capability": {
+        "name": "notifications.send",
+        "version": 2
+      }
+    },
+    "outcome": "refused",
+    "detail": "binding-not-issued"
+  },
+  {
+    "type": "appport.evidence.state-access/1",
+    "observedAt": "2026-10-15T12:00:00.030Z",
+    "sequence": 0,
+    "application": "com.example.orders",
+    "invocationId": "inv_root",
+    "requestId": "req_01JABCDEFGHJKMNPQRSTVWXYZ0",
+    "capability": {
+      "name": "orders.place",
+      "version": 1
+    },
+    "operation": "write",
+    "resource": {
+      "classification": "mapped",
+      "id": "urn:example:orders:order"
+    },
+    "outcome": "ok"
+  },
+  {
+    "type": "appport.evidence.state-access/1",
+    "observedAt": "2026-10-15T12:00:00.040Z",
+    "sequence": 1,
+    "application": "com.example.orders",
+    "invocationId": "inv_root",
+    "operation": "query",
+    "resource": {
+      "classification": "unclassified"
+    },
+    "outcome": "error"
+  }
+]

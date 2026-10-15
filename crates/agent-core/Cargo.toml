@@ -1,0 +1,16 @@
+[package]
+name = "agent-core"
+version = "0.1.0"
+description = "Deterministic core of the coding agent: AppPort knowledge, contracts and validation. Model-agnostic."
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+indexmap = { version = "2.11.4", features = ["serde"] }
+regex = "1.13.1"
+ryu-js = "1.0.3"
+schemars = { version = "1.2.3", features = ["indexmap2"] }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = { version = "1.0.154", features = ["float_roundtrip", "preserve_order"] }
+sha2 = "0.10.9"

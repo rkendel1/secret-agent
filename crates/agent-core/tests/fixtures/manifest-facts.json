@@ -1,0 +1,160 @@
+{
+  "reference.manifest.json": {
+    "contractDigest": "sha256:ef6f079bf43b92a8080be7441ac5f6e9f80da3dbbe759f101df7b04c2b3bb3bf",
+    "digest": "sha256:086bad6caeaae39266a82dc4b6bb75ab6a941011c79154ad4c99e010f7244737",
+    "lint": {
+      "lintIntegration": [],
+      "lintAgentContract": [],
+      "lintDependencyModel": []
+    },
+    "semanticIssues": [
+      {
+        "at": "appport.manifest@1 input",
+        "issues": []
+      },
+      {
+        "at": "appport.manifest@1 output",
+        "issues": []
+      },
+      {
+        "at": "appport.ping@1 input",
+        "issues": []
+      },
+      {
+        "at": "appport.ping@1 output",
+        "issues": []
+      },
+      {
+        "at": "build.follow@1 input",
+        "issues": []
+      },
+      {
+        "at": "build.follow@1 output",
+        "issues": []
+      },
+      {
+        "at": "build.logs@1 input",
+        "issues": []
+      },
+      {
+        "at": "build.logs@1 output",
+        "issues": []
+      },
+      {
+        "at": "documents.explode@1 input",
+        "issues": []
+      },
+      {
+        "at": "documents.explode@1 output",
+        "issues": []
+      },
+      {
+        "at": "documents.list@1 input",
+        "issues": []
+      },
+      {
+        "at": "documents.list@1 output",
+        "issues": []
+      },
+      {
+        "at": "documents.open@1 input",
+        "issues": []
+      },
+      {
+        "at": "documents.open@1 output",
+        "issues": []
+      },
+      {
+        "at": "documents.save@1 input",
+        "issues": []
+      },
+      {
+        "at": "documents.save@1 output",
+        "issues": []
+      },
+      {
+        "at": "documents.save@2 input",
+        "issues": []
+      },
+      {
+        "at": "documents.save@2 output",
+        "issues": []
+      },
+      {
+        "at": "documents.slow@1 input",
+        "issues": []
+      },
+      {
+        "at": "documents.slow@1 output",
+        "issues": []
+      },
+      {
+        "at": "documents.changed@1 payload",
+        "issues": []
+      }
+    ]
+  },
+  "orders.manifest.json": {
+    "contractDigest": "sha256:282abf3f83246bd46628d48e29caa0f04a6911bbcb4c81ee210eadd7c55f1a77",
+    "digest": "sha256:eaf3d4549275da951f90d3df0fb7e8f209af26ee8dac4b651a8f0878f46481ab",
+    "lint": {
+      "lintIntegration": [],
+      "lintAgentContract": [],
+      "lintDependencyModel": []
+    },
+    "semanticIssues": [
+      {
+        "at": "appport.manifest@1 input",
+        "issues": []
+      },
+      {
+        "at": "appport.manifest@1 output",
+        "issues": []
+      },
+      {
+        "at": "appport.ping@1 input",
+        "issues": []
+      },
+      {
+        "at": "appport.ping@1 output",
+        "issues": []
+      },
+      {
+        "at": "orders.byref@1 input",
+        "issues": []
+      },
+      {
+        "at": "orders.byref@1 output",
+        "issues": []
+      },
+      {
+        "at": "orders.cancel@1 input",
+        "issues": []
+      },
+      {
+        "at": "orders.cancel@1 output",
+        "issues": []
+      },
+      {
+        "at": "orders.get@1 input",
+        "issues": []
+      },
+      {
+        "at": "orders.get@1 output",
+        "issues": []
+      },
+      {
+        "at": "orders.place@1 input",
+        "issues": []
+      },
+      {
+        "at": "orders.place@1 output",
+        "issues": []
+      },
+      {
+        "at": "orders.placed@1 payload",
+        "issues": []
+      }
+    ]
+  }
+}

@@ -1,0 +1,195 @@
+{
+  "capability": "orders.place@1",
+  "kind": "request",
+  "description": "Places an order.",
+  "purpose": "Create a customer order and reserve stock.",
+  "authority": "https://schema.example.com/authority/orders",
+  "effect": "consequential",
+  "effects": [
+    {
+      "type": "https://schema.example.com/effects/order-created",
+      "description": "A new order exists."
+    },
+    {
+      "type": "https://schema.example.com/effects/stock-reserved"
+    }
+  ],
+  "authorization": [
+    "orders.write"
+  ],
+  "approval": {
+    "required": true,
+    "approver": "https://schema.example.com/roles/order-desk"
+  },
+  "idempotency": "supported",
+  "concurrency": {
+    "mode": "keyed",
+    "key": "clientRef"
+  },
+  "timeoutMs": 10000,
+  "inputs": [
+    {
+      "pointer": "/clientRef",
+      "types": [
+        "string"
+      ],
+      "required": true
+    },
+    {
+      "pointer": "/sku",
+      "types": [
+        "string"
+      ],
+      "required": true
+    },
+    {
+      "pointer": "/quantity",
+      "types": [
+        "integer"
+      ],
+      "required": true
+    },
+    {
+      "pointer": "/note",
+      "types": [
+        "string"
+      ],
+      "required": false
+    }
+  ],
+  "outputs": [
+    {
+      "pointer": "/orderId",
+      "types": [
+        "string"
+      ],
+      "required": true,
+      "concept": "https://schema.example.com/commerce/Order"
+    },
+    {
+      "pointer": "/status",
+      "types": [
+        "string"
+      ],
+      "required": true,
+      "enum": [
+        "pending",
+        "placed",
+        "cancelled"
+      ],
+      "concept": "https://schema.example.com/commerce/OrderStatus"
+    },
+    {
+      "pointer": "/total",
+      "types": [
+        "number"
+      ],
+      "required": true,
+      "concept": "https://schema.example.com/commerce/OrderTotal",
+      "unit": "[USD]"
+    },
+    {
+      "pointer": "/placedAt",
+      "types": [
+        "string"
+      ],
+      "required": true,
+      "concept": "https://schema.example.com/commerce/placedAt",
+      "encoding": "iso8601"
+    }
+  ],
+  "emits": [
+    "orders.placed"
+  ],
+  "evidence": {
+    "methods": [
+      {
+        "id": "order-exists",
+        "kind": "state",
+        "strength": "establishes",
+        "probe": "orders.get@1"
+      },
+      {
+        "id": "placed-event",
+        "kind": "event",
+        "strength": "corroborates",
+        "event": "orders.placed"
+      }
+    ],
+    "establishable": true
+  },
+  "preconditions": [
+    {
+      "id": "no-duplicate",
+      "via": {
+        "capability": "orders.byref",
+        "version": 1,
+        "input": {
+          "clientRef": {
+            "$input": "/clientRef"
+          }
+        }
+      },
+      "require": "not-found"
+    }
+  ],
+  "failures": [
+    {
+      "code": "CONFLICT",
+      "retry": "after-verification",
+      "effect": "possible",
+      "description": "Stock changed mid-request."
+    },
+    {
+      "code": "INVALID_INPUT",
+      "retry": "unsafe",
+      "effect": "none"
+    }
+  ],
+  "requires": [
+    {
+      "id": "stock",
+      "relationship": "invokes",
+      "target": {
+        "application": "com.example.inventory",
+        "capability": "inventory.reserve@1"
+      },
+      "required": true,
+      "purpose": "Reserve stock for the order."
+    },
+    {
+      "id": "lookup",
+      "relationship": "observes",
+      "target": {
+        "capability": "orders.get@1"
+      },
+      "required": false
+    },
+    {
+      "id": "pricing",
+      "relationship": "consumes-event",
+      "target": {
+        "application": "com.example.pricing",
+        "event": "pricing.changed"
+      },
+      "required": false,
+      "versionConstraint": "^1"
+    }
+  ],
+  "access": [
+    {
+      "resource": "urn:example:orders:order",
+      "mode": "changes",
+      "operations": [
+        "create"
+      ]
+    },
+    {
+      "resource": "urn:example:inventory:stock",
+      "mode": "changes",
+      "operations": [
+        "update"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "capability": "documents.save@2",
+  "kind": "request",
+  "description": "Saves a document, optionally renaming it.",
+  "authorization": [
+    "documents.write"
+  ],
+  "idempotency": "supported",
+  "concurrency": {
+    "mode": "keyed",
+    "key": "documentId"
+  },
+  "inputs": [
+    {
+      "pointer": "/documentId",
+      "types": [
+        "string"
+      ],
+      "required": true
+    },
+    {
+      "pointer": "/content",
+      "types": [
+        "string"
+      ],
+      "required": true
+    },
+    {
+      "pointer": "/title",
+      "types": [
+        "string"
+      ],
+      "required": false
+    }
+  ],
+  "outputs": [
+    {
+      "pointer": "/version",
+      "types": [
+        "integer"
+      ],
+      "required": true
+    },
+    {
+      "pointer": "/savedAt",
+      "types": [
+        "string"
+      ],
+      "required": true,
+      "description": "ISO-8601 timestamp",
+      "format": "date-time"
+    }
+  ],
+  "emits": [
+    "documents.changed"
+  ],
+  "evidence": {
+    "methods": [],
+    "establishable": false
+  },
+  "unknowns": [
+    "effect",
+    "integration",
+    "verification"
+  ]
+}

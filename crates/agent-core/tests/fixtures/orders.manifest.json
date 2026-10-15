@@ -1,0 +1,1187 @@
+{
+  "protocol": "appport/1",
+  "application": {
+    "id": "com.example.orders",
+    "name": "Orders",
+    "version": "3.4.0",
+    "description": "Integration-rich reference application for the Rust knowledge module."
+  },
+  "capabilities": [
+    {
+      "name": "appport.manifest",
+      "versions": [
+        1
+      ],
+      "latestVersion": 1,
+      "description": "Returns the application manifest for this deployment.",
+      "kind": "request",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "protocol": {
+            "type": "string"
+          },
+          "application": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "version": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": true,
+            "required": [
+              "id",
+              "name",
+              "version"
+            ]
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          },
+          "transports": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "protocol",
+          "application",
+          "capabilities",
+          "events",
+          "transports"
+        ],
+        "title": "AppPortManifest"
+      },
+      "authorization": [],
+      "authorizationContract": {
+        "required": false,
+        "public": true
+      },
+      "authorizationVersion": 1,
+      "idempotency": "unsupported",
+      "concurrency": {
+        "mode": "parallel"
+      },
+      "definitions": [
+        {
+          "version": 1,
+          "description": "Returns the application manifest for this deployment.",
+          "kind": "request",
+          "inputSchema": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false
+          },
+          "outputSchema": {
+            "type": "object",
+            "properties": {
+              "protocol": {
+                "type": "string"
+              },
+              "application": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "version": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": true,
+                "required": [
+                  "id",
+                  "name",
+                  "version"
+                ]
+              },
+              "capabilities": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              },
+              "events": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              },
+              "transports": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "additionalProperties": true,
+            "required": [
+              "protocol",
+              "application",
+              "capabilities",
+              "events",
+              "transports"
+            ],
+            "title": "AppPortManifest"
+          },
+          "authorization": [],
+          "authorizationContract": {
+            "required": false,
+            "public": true
+          },
+          "authorizationVersion": 1,
+          "idempotency": "unsupported",
+          "concurrency": {
+            "mode": "parallel"
+          }
+        }
+      ]
+    },
+    {
+      "name": "appport.ping",
+      "versions": [
+        1
+      ],
+      "latestVersion": 1,
+      "description": "Liveness probe. Returns the server time.",
+      "kind": "request",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "description": "ISO-8601 timestamp",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "timestamp"
+        ]
+      },
+      "authorization": [],
+      "authorizationContract": {
+        "required": false,
+        "public": true
+      },
+      "authorizationVersion": 1,
+      "idempotency": "unsupported",
+      "concurrency": {
+        "mode": "parallel"
+      },
+      "definitions": [
+        {
+          "version": 1,
+          "description": "Liveness probe. Returns the server time.",
+          "kind": "request",
+          "inputSchema": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false
+          },
+          "outputSchema": {
+            "type": "object",
+            "properties": {
+              "timestamp": {
+                "type": "string",
+                "description": "ISO-8601 timestamp",
+                "format": "date-time"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "timestamp"
+            ]
+          },
+          "authorization": [],
+          "authorizationContract": {
+            "required": false,
+            "public": true
+          },
+          "authorizationVersion": 1,
+          "idempotency": "unsupported",
+          "concurrency": {
+            "mode": "parallel"
+          }
+        }
+      ]
+    },
+    {
+      "name": "orders.byref",
+      "versions": [
+        1
+      ],
+      "latestVersion": 1,
+      "description": "Finds an order by the client's reference.",
+      "kind": "request",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "clientRef": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "clientRef"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "x-appport-concept": "https://schema.example.com/commerce/Order"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "orderId"
+        ]
+      },
+      "authorization": [
+        "orders.read"
+      ],
+      "effect": "observation",
+      "authorizationContract": {
+        "required": true,
+        "scopes": [
+          "orders.read"
+        ]
+      },
+      "authorizationVersion": 1,
+      "idempotency": "supported",
+      "concurrency": {
+        "mode": "parallel"
+      },
+      "definitions": [
+        {
+          "version": 1,
+          "description": "Finds an order by the client's reference.",
+          "kind": "request",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "clientRef": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "clientRef"
+            ]
+          },
+          "outputSchema": {
+            "type": "object",
+            "properties": {
+              "orderId": {
+                "type": "string",
+                "x-appport-concept": "https://schema.example.com/commerce/Order"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "orderId"
+            ]
+          },
+          "authorization": [
+            "orders.read"
+          ],
+          "effect": "observation",
+          "authorizationContract": {
+            "required": true,
+            "scopes": [
+              "orders.read"
+            ]
+          },
+          "authorizationVersion": 1,
+          "idempotency": "supported",
+          "concurrency": {
+            "mode": "parallel"
+          }
+        }
+      ]
+    },
+    {
+      "name": "orders.cancel",
+      "versions": [
+        1
+      ],
+      "latestVersion": 1,
+      "description": "Cancels an order.",
+      "kind": "request",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "x-appport-concept": "https://schema.example.com/commerce/Order"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "orderId"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "x-appport-concept": "https://schema.example.com/commerce/Order"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "placed",
+              "cancelled"
+            ],
+            "x-appport-concept": "https://schema.example.com/commerce/OrderStatus",
+            "x-appport-enum-concepts": {
+              "pending": "https://schema.example.com/commerce/OrderStatus#pending",
+              "placed": "https://schema.example.com/commerce/OrderStatus#placed",
+              "cancelled": "https://schema.example.com/commerce/OrderStatus#cancelled"
+            }
+          },
+          "total": {
+            "type": "number",
+            "x-appport-concept": "https://schema.example.com/commerce/OrderTotal",
+            "x-appport-unit": "[USD]"
+          },
+          "placedAt": {
+            "type": "string",
+            "x-appport-concept": "https://schema.example.com/commerce/placedAt",
+            "x-appport-encoding": "iso8601"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "orderId",
+          "status",
+          "total",
+          "placedAt"
+        ]
+      },
+      "authorization": [
+        "orders.write"
+      ],
+      "effect": "consequential",
+      "authorizationContract": {
+        "required": true,
+        "scopes": [
+          "orders.write"
+        ]
+      },
+      "authorizationVersion": 1,
+      "idempotency": "unsupported",
+      "concurrency": {
+        "mode": "parallel"
+      },
+      "definitions": [
+        {
+          "version": 1,
+          "description": "Cancels an order.",
+          "kind": "request",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "orderId": {
+                "type": "string",
+                "x-appport-concept": "https://schema.example.com/commerce/Order"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "orderId"
+            ]
+          },
+          "outputSchema": {
+            "type": "object",
+            "properties": {
+              "orderId": {
+                "type": "string",
+                "x-appport-concept": "https://schema.example.com/commerce/Order"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "placed",
+                  "cancelled"
+                ],
+                "x-appport-concept": "https://schema.example.com/commerce/OrderStatus",
+                "x-appport-enum-concepts": {
+                  "pending": "https://schema.example.com/commerce/OrderStatus#pending",
+                  "placed": "https://schema.example.com/commerce/OrderStatus#placed",
+                  "cancelled": "https://schema.example.com/commerce/OrderStatus#cancelled"
+                }
+              },
+              "total": {
+                "type": "number",
+                "x-appport-concept": "https://schema.example.com/commerce/OrderTotal",
+                "x-appport-unit": "[USD]"
+              },
+              "placedAt": {
+                "type": "string",
+                "x-appport-concept": "https://schema.example.com/commerce/placedAt",
+                "x-appport-encoding": "iso8601"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "orderId",
+              "status",
+              "total",
+              "placedAt"
+            ]
+          },
+          "authorization": [
+            "orders.write"
+          ],
+          "effect": "consequential",
+          "authorizationContract": {
+            "required": true,
+            "scopes": [
+              "orders.write"
+            ]
+          },
+          "authorizationVersion": 1,
+          "idempotency": "unsupported",
+          "concurrency": {
+            "mode": "parallel"
+          }
+        }
+      ]
+    },
+    {
+      "name": "orders.get",
+      "versions": [
+        1
+      ],
+      "latestVersion": 1,
+      "description": "Reads one order.",
+      "kind": "request",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "x-appport-concept": "https://schema.example.com/commerce/Order"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "orderId"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "x-appport-concept": "https://schema.example.com/commerce/Order"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "placed",
+              "cancelled"
+            ],
+            "x-appport-concept": "https://schema.example.com/commerce/OrderStatus",
+            "x-appport-enum-concepts": {
+              "pending": "https://schema.example.com/commerce/OrderStatus#pending",
+              "placed": "https://schema.example.com/commerce/OrderStatus#placed",
+              "cancelled": "https://schema.example.com/commerce/OrderStatus#cancelled"
+            }
+          },
+          "total": {
+            "type": "number",
+            "x-appport-concept": "https://schema.example.com/commerce/OrderTotal",
+            "x-appport-unit": "[USD]"
+          },
+          "placedAt": {
+            "type": "string",
+            "x-appport-concept": "https://schema.example.com/commerce/placedAt",
+            "x-appport-encoding": "iso8601"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "orderId",
+          "status",
+          "total",
+          "placedAt"
+        ]
+      },
+      "authorization": [
+        "orders.read"
+      ],
+      "effect": "observation",
+      "authorizationContract": {
+        "required": true,
+        "scopes": [
+          "orders.read"
+        ]
+      },
+      "authorizationVersion": 1,
+      "idempotency": "supported",
+      "concurrency": {
+        "mode": "parallel"
+      },
+      "definitions": [
+        {
+          "version": 1,
+          "description": "Reads one order.",
+          "kind": "request",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "orderId": {
+                "type": "string",
+                "x-appport-concept": "https://schema.example.com/commerce/Order"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "orderId"
+            ]
+          },
+          "outputSchema": {
+            "type": "object",
+            "properties": {
+              "orderId": {
+                "type": "string",
+                "x-appport-concept": "https://schema.example.com/commerce/Order"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "placed",
+                  "cancelled"
+                ],
+                "x-appport-concept": "https://schema.example.com/commerce/OrderStatus",
+                "x-appport-enum-concepts": {
+                  "pending": "https://schema.example.com/commerce/OrderStatus#pending",
+                  "placed": "https://schema.example.com/commerce/OrderStatus#placed",
+                  "cancelled": "https://schema.example.com/commerce/OrderStatus#cancelled"
+                }
+              },
+              "total": {
+                "type": "number",
+                "x-appport-concept": "https://schema.example.com/commerce/OrderTotal",
+                "x-appport-unit": "[USD]"
+              },
+              "placedAt": {
+                "type": "string",
+                "x-appport-concept": "https://schema.example.com/commerce/placedAt",
+                "x-appport-encoding": "iso8601"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "orderId",
+              "status",
+              "total",
+              "placedAt"
+            ]
+          },
+          "authorization": [
+            "orders.read"
+          ],
+          "effect": "observation",
+          "authorizationContract": {
+            "required": true,
+            "scopes": [
+              "orders.read"
+            ]
+          },
+          "authorizationVersion": 1,
+          "idempotency": "supported",
+          "concurrency": {
+            "mode": "parallel"
+          }
+        }
+      ]
+    },
+    {
+      "name": "orders.place",
+      "versions": [
+        1
+      ],
+      "latestVersion": 1,
+      "description": "Places an order.",
+      "kind": "request",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "clientRef": {
+            "type": "string"
+          },
+          "sku": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "integer"
+          },
+          "note": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "clientRef",
+          "sku",
+          "quantity"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "x-appport-concept": "https://schema.example.com/commerce/Order"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "placed",
+              "cancelled"
+            ],
+            "x-appport-concept": "https://schema.example.com/commerce/OrderStatus",
+            "x-appport-enum-concepts": {
+              "pending": "https://schema.example.com/commerce/OrderStatus#pending",
+              "placed": "https://schema.example.com/commerce/OrderStatus#placed",
+              "cancelled": "https://schema.example.com/commerce/OrderStatus#cancelled"
+            }
+          },
+          "total": {
+            "type": "number",
+            "x-appport-concept": "https://schema.example.com/commerce/OrderTotal",
+            "x-appport-unit": "[USD]"
+          },
+          "placedAt": {
+            "type": "string",
+            "x-appport-concept": "https://schema.example.com/commerce/placedAt",
+            "x-appport-encoding": "iso8601"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "orderId",
+          "status",
+          "total",
+          "placedAt"
+        ]
+      },
+      "authorization": [
+        "orders.write"
+      ],
+      "effect": "consequential",
+      "authorizationContract": {
+        "required": true,
+        "scopes": [
+          "orders.write"
+        ]
+      },
+      "authorizationVersion": 1,
+      "idempotency": "supported",
+      "concurrency": {
+        "mode": "keyed",
+        "key": "clientRef"
+      },
+      "definitions": [
+        {
+          "version": 1,
+          "description": "Places an order.",
+          "kind": "request",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "clientRef": {
+                "type": "string"
+              },
+              "sku": {
+                "type": "string"
+              },
+              "quantity": {
+                "type": "integer"
+              },
+              "note": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "clientRef",
+              "sku",
+              "quantity"
+            ]
+          },
+          "outputSchema": {
+            "type": "object",
+            "properties": {
+              "orderId": {
+                "type": "string",
+                "x-appport-concept": "https://schema.example.com/commerce/Order"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "placed",
+                  "cancelled"
+                ],
+                "x-appport-concept": "https://schema.example.com/commerce/OrderStatus",
+                "x-appport-enum-concepts": {
+                  "pending": "https://schema.example.com/commerce/OrderStatus#pending",
+                  "placed": "https://schema.example.com/commerce/OrderStatus#placed",
+                  "cancelled": "https://schema.example.com/commerce/OrderStatus#cancelled"
+                }
+              },
+              "total": {
+                "type": "number",
+                "x-appport-concept": "https://schema.example.com/commerce/OrderTotal",
+                "x-appport-unit": "[USD]"
+              },
+              "placedAt": {
+                "type": "string",
+                "x-appport-concept": "https://schema.example.com/commerce/placedAt",
+                "x-appport-encoding": "iso8601"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "orderId",
+              "status",
+              "total",
+              "placedAt"
+            ]
+          },
+          "authorization": [
+            "orders.write"
+          ],
+          "effect": "consequential",
+          "authorizationContract": {
+            "required": true,
+            "scopes": [
+              "orders.write"
+            ]
+          },
+          "authorizationVersion": 1,
+          "idempotency": "supported",
+          "concurrency": {
+            "mode": "keyed",
+            "key": "clientRef"
+          },
+          "timeoutMs": 10000,
+          "emits": [
+            "orders.placed"
+          ]
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "orders.placed",
+      "versions": [
+        1
+      ],
+      "latestVersion": 1,
+      "description": "An order was placed.",
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "x-appport-concept": "https://schema.example.com/commerce/Order"
+          },
+          "total": {
+            "type": "number",
+            "x-appport-concept": "https://schema.example.com/commerce/OrderTotal",
+            "x-appport-unit": "[USD]"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "orderId",
+          "total"
+        ]
+      },
+      "authorization": [
+        "orders.read"
+      ],
+      "definitions": [
+        {
+          "version": 1,
+          "description": "An order was placed.",
+          "payloadSchema": {
+            "type": "object",
+            "properties": {
+              "orderId": {
+                "type": "string",
+                "x-appport-concept": "https://schema.example.com/commerce/Order"
+              },
+              "total": {
+                "type": "number",
+                "x-appport-concept": "https://schema.example.com/commerce/OrderTotal",
+                "x-appport-unit": "[USD]"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "orderId",
+              "total"
+            ]
+          },
+          "authorization": [
+            "orders.read"
+          ]
+        }
+      ]
+    }
+  ],
+  "transports": [
+    {
+      "kind": "http",
+      "endpoint": "/appport"
+    }
+  ],
+  "conformance": 2,
+  "extensions": [
+    "appport.integration/1"
+  ],
+  "attributes": {
+    "appport.integration/1": {
+      "capabilities": {
+        "orders.byref@1": {
+          "access": [
+            {
+              "resource": "urn:example:orders:order",
+              "mode": "reads"
+            }
+          ]
+        },
+        "orders.cancel@1": {
+          "authority": "https://schema.example.com/authority/orders",
+          "effects": [
+            {
+              "type": "https://schema.example.com/effects/order-cancelled"
+            }
+          ],
+          "verify": [
+            {
+              "id": "order-cancelled",
+              "kind": "state",
+              "via": {
+                "capability": "orders.get",
+                "version": 1,
+                "input": {
+                  "orderId": {
+                    "$input": "/orderId"
+                  }
+                }
+              },
+              "expect": [
+                {
+                  "at": "/status",
+                  "equals": "cancelled"
+                }
+              ]
+            }
+          ],
+          "requires": [
+            {
+              "id": "read-back",
+              "relationship": "observes",
+              "target": {
+                "capability": "orders.get"
+              },
+              "versionConstraint": ">=1",
+              "required": true
+            }
+          ],
+          "access": [
+            {
+              "resource": "urn:example:orders:order",
+              "mode": "changes",
+              "operations": [
+                "update"
+              ]
+            }
+          ],
+          "approval": {
+            "required": false
+          },
+          "preconditions": [
+            {
+              "id": "exists",
+              "via": {
+                "capability": "orders.get",
+                "version": 1,
+                "input": {
+                  "orderId": {
+                    "$input": "/orderId"
+                  }
+                }
+              },
+              "require": "found",
+              "expect": [
+                {
+                  "at": "/status",
+                  "equals": "placed"
+                }
+              ]
+            }
+          ],
+          "failures": [
+            {
+              "code": "NOT_FOUND",
+              "retry": "safe",
+              "effect": "none"
+            }
+          ]
+        },
+        "orders.get@1": {
+          "purpose": "Look up the current state of an order.",
+          "authority": "https://schema.example.com/authority/orders",
+          "access": [
+            {
+              "resource": "urn:example:orders:order",
+              "mode": "reads"
+            }
+          ],
+          "coverage": {
+            "requires": "complete",
+            "access": "complete"
+          }
+        },
+        "orders.place@1": {
+          "purpose": "Create a customer order and reserve stock.",
+          "authority": "https://schema.example.com/authority/orders",
+          "effects": [
+            {
+              "type": "https://schema.example.com/effects/order-created",
+              "description": "A new order exists."
+            },
+            {
+              "type": "https://schema.example.com/effects/stock-reserved"
+            }
+          ],
+          "verify": [
+            {
+              "id": "order-exists",
+              "kind": "state",
+              "via": {
+                "capability": "orders.get",
+                "version": 1,
+                "input": {
+                  "orderId": {
+                    "$output": "/orderId"
+                  }
+                }
+              },
+              "expect": [
+                {
+                  "at": "/status",
+                  "equals": "placed"
+                },
+                {
+                  "at": "/total",
+                  "exists": true
+                }
+              ]
+            },
+            {
+              "id": "placed-event",
+              "kind": "event",
+              "event": "orders.placed",
+              "match": {
+                "/orderId": {
+                  "$output": "/orderId"
+                }
+              },
+              "strength": "corroborating"
+            }
+          ],
+          "requires": [
+            {
+              "id": "stock",
+              "relationship": "invokes",
+              "target": {
+                "application": "com.example.inventory",
+                "capability": "inventory.reserve@1"
+              },
+              "required": true,
+              "purpose": "Reserve stock for the order."
+            },
+            {
+              "id": "lookup",
+              "relationship": "observes",
+              "target": {
+                "capability": "orders.get@1"
+              },
+              "required": false
+            },
+            {
+              "id": "pricing",
+              "relationship": "consumes-event",
+              "target": {
+                "application": "com.example.pricing",
+                "event": "pricing.changed"
+              },
+              "required": false,
+              "versionConstraint": "^1"
+            }
+          ],
+          "access": [
+            {
+              "resource": "urn:example:orders:order",
+              "mode": "changes",
+              "operations": [
+                "create"
+              ]
+            },
+            {
+              "resource": "urn:example:inventory:stock",
+              "mode": "changes",
+              "operations": [
+                "update"
+              ]
+            }
+          ],
+          "coverage": {
+            "requires": "complete",
+            "access": "partial",
+            "preconditions": "complete",
+            "failures": "partial"
+          },
+          "approval": {
+            "required": true,
+            "approver": "https://schema.example.com/roles/order-desk"
+          },
+          "preconditions": [
+            {
+              "id": "no-duplicate",
+              "via": {
+                "capability": "orders.byref",
+                "version": 1,
+                "input": {
+                  "clientRef": {
+                    "$input": "/clientRef"
+                  }
+                }
+              },
+              "require": "not-found"
+            }
+          ],
+          "failures": [
+            {
+              "code": "CONFLICT",
+              "retry": "after-verification",
+              "effect": "possible",
+              "description": "Stock changed mid-request."
+            },
+            {
+              "code": "INVALID_INPUT",
+              "retry": "unsafe",
+              "effect": "none"
+            }
+          ]
+        }
+      },
+      "mappings": [
+        {
+          "id": "urn:example:mapping:legacy-order",
+          "version": 1,
+          "digest": "sha256:e1ca49f85baf351346774e2775ec30cb5d828e42cb4e34827a291c093a5c9d4a",
+          "direction": "inbound",
+          "for": "orders.place@1",
+          "peer": {
+            "application": "com.example.legacy"
+          },
+          "origin": "provider",
+          "artifact": {
+            "id": "urn:example:mapping:legacy-order",
+            "version": 1,
+            "from": "legacy.order",
+            "to": "orders.place@1",
+            "fields": {
+              "ref": "/clientRef",
+              "item": "/sku",
+              "qty": "/quantity"
+            }
+          }
+        }
+      ],
+      "requires": [
+        {
+          "id": "notify",
+          "relationship": "delegates",
+          "target": {
+            "application": "com.example.notifications",
+            "capability": "notifications.send@2"
+          },
+          "required": false
+        }
+      ],
+      "resources": [
+        {
+          "id": "urn:example:orders:order",
+          "kind": "entity",
+          "concept": "https://schema.example.com/commerce/Order",
+          "owner": "self",
+          "description": "A customer order."
+        },
+        {
+          "id": "urn:example:inventory:stock",
+          "kind": "counter",
+          "owner": {
+            "application": "com.example.inventory"
+          }
+        }
+      ]
+    }
+  }
+}

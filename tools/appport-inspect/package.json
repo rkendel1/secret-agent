@@ -1,0 +1,17 @@
+{
+  "name": "appport-inspect",
+  "private": true,
+  "type": "module",
+  "description": "Build-time inspection of the published @appport/* packages. Produces the surface snapshot and fixtures the Rust knowledge module is checked against.",
+  "scripts": {
+    "generate": "node inspect.mjs --out ../../crates/agent-core",
+    "check": "node inspect.mjs --check ../../crates/agent-core"
+  },
+  "dependencies": {
+    "@appport/core": "1.2.0",
+    "@appport/protocol": "1.1.0",
+    "@appport/schema": "1.1.0",
+    "@appport/testing": "1.1.3",
+    "typescript": "5.9.3"
+  }
+}

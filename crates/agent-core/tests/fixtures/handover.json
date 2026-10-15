@@ -1,0 +1,46 @@
+{
+  "request": {
+    "capability": {
+      "name": "orders.place",
+      "version": 1
+    },
+    "from": {
+      "id": "com.example.orders",
+      "registrationId": "reg_old",
+      "fingerprint": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "to": {
+      "id": "com.example.orders-v2",
+      "registrationId": "reg_new",
+      "fingerprint": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    }
+  },
+  "record": {
+    "handoverId": "hand_01",
+    "capability": {
+      "name": "orders.place",
+      "version": 1
+    },
+    "from": {
+      "id": "com.example.orders",
+      "registrationId": "reg_old",
+      "fingerprint": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "statusBefore": "active",
+      "statusAfter": "retired",
+      "revisionAfter": 4
+    },
+    "to": {
+      "id": "com.example.orders-v2",
+      "registrationId": "reg_new",
+      "fingerprint": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "statusBefore": "registered",
+      "statusAfter": "active",
+      "revisionAfter": 2
+    },
+    "at": "2026-10-15T12:10:00.000Z"
+  },
+  "rejections": [
+    "contract-mismatch",
+    "to-not-validated"
+  ]
+}
