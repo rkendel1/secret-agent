@@ -1,0 +1,76 @@
+[  3447 ms] observe      131 source file(s), @appport packages [@appport/protocol@^1.0.3, @appport/schema@1.1.0, @appport/sdk@1.2.4], application appport/server.ts#application
+[  3447 ms] observe      declares documents.list@1 at appport/capabilities/documents.ts:18 → appport/capabilities/documents.ts
+[  3447 ms] observe      declares documents.open@1 at appport/capabilities/documents.ts:35 → appport/capabilities/documents.ts
+[  3447 ms] observe      declares documents.save@1 at appport/capabilities/documents.ts:56 → appport/capabilities/documents.ts
+[  3637 ms] contract     com.example.appportservices 1.0.0: 6 capability version(s), 1 event(s); graph 9 nodes / 12 edges; contractDigest sha256:1142b61376d911ba33f12a27291d85997face48288d573655bc992c803bcb0d5
+[  3644 ms] plan         contract: observed contract of com.example.appportservices is structurally valid
+[  3645 ms] plan         target: documents.open@1: effect observation, 1 input field(s), 4 output field(s), 1 declared failure(s), 8 replacement constraint(s)
+[  3645 ms] plan         source: documents.open@1 is declared in appport/capabilities/documents.ts:35 and implemented in appport/capabilities/documents.ts
+[  3645 ms] plan         source: the handler is inline in the contract module appport/capabilities/documents.ts; the contract identity check guards it
+[  3645 ms] plan         graph: capability:com.example.appportservices/documents.save@1 --verified-by--> documents.open@1
+[  3645 ms] plan         code: documents.list@1 imports appport/capabilities/documents.ts (directly or transitively)
+[  3645 ms] plan         code: documents.save@1 imports appport/capabilities/documents.ts (directly or transitively)
+[  3645 ms] plan         probes: documents.save@1 is not an observation: not probed for regression on existing state
+[  3645 ms] plan         probes: verify documents.save@1 (its declared state verification re-reads through the target)
+[  3645 ms] plan         probes: documents.list@1 needs no input and returns https://schema.appport.dev/documents/Document: it enumerates existing state
+[  3645 ms] plan         permissions: verification session is granted only [documents.read, documents.write]
+[  3645 ms] plan         context: edit appport/capabilities/documents.ts: implements documents.open@1
+[  3645 ms] plan         accept only if [edit.boundary] only the target's implementation module changes
+[  3645 ms] plan         accept only if [runtime.load] the application loads and answers appport.manifest@1
+[  3645 ms] plan         accept only if [contract.identity] the published contract is unchanged (contractDigest sha256:1142b61376d9)
+[  3645 ms] plan         accept only if [contract.valid] the published contract has no validation errors
+[  3645 ms] plan         accept only if [output.conformance] every output observed conforms to its declared output schema
+[  3645 ms] plan         accept only if [failures.declared] documents.open@1 fails only with its declared failure codes (NOT_FOUND)
+[  3645 ms] plan         accept only if [behavior.regression] answers on existing state are unchanged for documents.open@1, documents.list@1
+[  3645 ms] plan         accept only if [verification] documents.save@1: declared verification (document-saved, changed-event) is not contradicted and every state method confirms
+[  3645 ms] model        model: scripted:examples/appport-services/scripted/replace-documents-open
+[  3823 ms] baseline     enumerate documents.list@1 {} → ok
+[  3823 ms] baseline     regression documents.open@1 {"documentId":"doc_welcome"} → ok
+[  3823 ms] baseline     regression documents.open@1 {"documentId":"absent-documents.open-1"} → NOT_FOUND
+[  3823 ms] baseline     regression documents.list@1 {} → ok
+[  3823 ms] baseline     flow documents.save@1 {"documentId":"probe-1-documentId","content":"probe-1-content"} → ok
+[  3823 ms] baseline     probe documents.open@1 {"documentId":"probe-1-documentId"} → ok
+[  3823 ms] baseline     evidence documents.save@1: verified (document-saved confirmed, changed-event confirmed)
+[  3832 ms] model        attempt 1: asking for the implementation (7540 bytes of context)
+[  3832 ms] model        attempt 1: scripted/01.txt answered (2003 in / 1172 out tokens, estimated)
+[  3833 ms] apply        attempt 1: wrote appport/capabilities/documents.ts
+[  4004 ms] candidate    enumerate documents.list@1 {} → ok
+[  4004 ms] candidate    regression documents.open@1 {"documentId":"doc_welcome"} → ok
+[  4004 ms] candidate    regression documents.open@1 {"documentId":"absent-documents.open-1"} → NOT_FOUND
+[  4004 ms] candidate    regression documents.list@1 {} → ok
+[  4004 ms] candidate    flow documents.save@1 {"documentId":"probe-1-documentId","content":"probe-1-content"} → ok
+[  4004 ms] candidate    probe documents.open@1 {"documentId":"probe-1-documentId"} → ok
+[  4004 ms] candidate    evidence documents.save@1: verified (document-saved confirmed, changed-event confirmed)
+[  4020 ms] verify       pass [edit.boundary] only the target's implementation module changes
+[  4020 ms] verify       pass [runtime.load] the application loads and answers appport.manifest@1
+[  4020 ms] verify       FAIL [contract.identity] the published contract is unchanged (contractDigest sha256:1142b61376d9)
+[  4020 ms] verify            - contractDigest changed: sha256:1142b61376d911ba33f12a27291d85997face48288d573655bc992c803bcb0d5 → sha256:1b96028bebac94753d4e211ee45ba30635cf979b0c3b5c9aafc5ef6e8415cf2c
+[  4020 ms] verify            - documents.open@1's contract pin changed: sha256:000b63ee8e76b743d2c00f209c409b6b272229dc6d0a86cb710e3c796be932e7 → sha256:e43ada161b52cd61fe56e7f9c00a69d6cbab42d1081c2300ee1daf8ed2821552
+[  4020 ms] verify       pass [contract.valid] the published contract has no validation errors
+[  4020 ms] verify       pass [output.conformance] every output observed conforms to its declared output schema
+[  4020 ms] verify       pass [failures.declared] documents.open@1 fails only with its declared failure codes (NOT_FOUND)
+[  4020 ms] verify       FAIL [behavior.regression] answers on existing state are unchanged for documents.open@1, documents.list@1
+[  4020 ms] verify            - documents.open@1 {"documentId":"doc_welcome"}: was {"output":{"id":"doc_welcome","title":"Welcome","content":"Hello from AppPort","version":1}}, now {"output":{"id":"doc_welcome","title":"Welcome","content":"Hello from AppPort","version":1,"openedAt":"2026-10-15T23:09:09.708Z"}}
+[  4020 ms] verify       pass [verification] documents.save@1: declared verification (document-saved, changed-event) is not contradicted and every state method confirms
+[  4020 ms] verify       attempt 1: REJECTED
+[  4021 ms] apply        attempt 1: rejected; the project is restored
+[  4022 ms] model        attempt 2: asking for the implementation (8322 bytes of context, 3 violation(s) to fix)
+[  4022 ms] model        attempt 2: scripted/02.txt answered (2199 in / 1150 out tokens, estimated)
+[  4023 ms] apply        attempt 2: wrote appport/capabilities/documents.ts
+[  4197 ms] candidate    enumerate documents.list@1 {} → ok
+[  4197 ms] candidate    regression documents.open@1 {"documentId":"doc_welcome"} → ok
+[  4197 ms] candidate    regression documents.open@1 {"documentId":"absent-documents.open-1"} → NOT_FOUND
+[  4197 ms] candidate    regression documents.list@1 {} → ok
+[  4197 ms] candidate    flow documents.save@1 {"documentId":"probe-1-documentId","content":"probe-1-content"} → ok
+[  4197 ms] candidate    probe documents.open@1 {"documentId":"probe-1-documentId"} → ok
+[  4197 ms] candidate    evidence documents.save@1: verified (document-saved confirmed, changed-event confirmed)
+[  4208 ms] verify       pass [edit.boundary] only the target's implementation module changes
+[  4208 ms] verify       pass [runtime.load] the application loads and answers appport.manifest@1
+[  4208 ms] verify       pass [contract.identity] the published contract is unchanged (contractDigest sha256:1142b61376d9)
+[  4208 ms] verify       pass [contract.valid] the published contract has no validation errors
+[  4208 ms] verify       pass [output.conformance] every output observed conforms to its declared output schema
+[  4208 ms] verify       pass [failures.declared] documents.open@1 fails only with its declared failure codes (NOT_FOUND)
+[  4208 ms] verify       pass [behavior.regression] answers on existing state are unchanged for documents.open@1, documents.list@1
+[  4208 ms] verify       pass [verification] documents.save@1: declared verification (document-saved, changed-event) is not contradicted and every state method confirms
+[  4208 ms] verify       attempt 2: ACCEPTED
+[  4210 ms] done         ACCEPTED: 2 model call(s), 1 rejected; 4 application run(s); model used for discovery 0 times, for verification 0 times

@@ -1,0 +1,6 @@
+[  3387 ms] observe      131 source file(s), @appport packages [@appport/protocol@^1.0.3, @appport/schema@1.1.0, @appport/sdk@1.2.4], application appport/server.ts#application
+[  3387 ms] observe      declares documents.list@1 at appport/capabilities/documents.ts:11 → appport/capabilities/documents.ts
+[  3387 ms] observe      declares documents.open@1 at appport/capabilities/documents.ts:25 → appport/capabilities/documents.ts
+[  3387 ms] observe      declares documents.save@1 at appport/capabilities/documents.ts:39 → appport/capabilities/documents.ts
+[  3567 ms] contract     com.example.appportservices 1.0.0: 6 capability version(s), 1 event(s); graph 8 nodes / 7 edges; contractDigest sha256:352f2753b40791c3660f6795bcbb82fb24be8c629c046e5723b84b75adece206
+appport-agent: refused to plan: contract.unverifiable: the contract gives no way to verify the behaviour of documents.open@1: its effect is not declared, no observation depends on it, and no declared verification method relies on it. Declare `effect: "observation"` on the capabilities that only read, or `integration.verify` methods that re-read through documents.open@1

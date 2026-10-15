@@ -1,5 +1,6 @@
 {
   "intent": "replace customers.lookup@1: read customers from the application's customer store instead of the legacy CRM export",
+  "contextMode": "knowledge",
   "project": "target/demo/project",
   "application": "com.example.customers",
   "model": "scripted:examples/scripted/replace-customer-lookup",
@@ -83,7 +84,11 @@
           }
         ]
       },
-      "durationMs": 136
+      "evidence": [
+        "customers.register@1: verified"
+      ],
+      "rolledBack": true,
+      "durationMs": 145
     },
     {
       "attempt": 2,
@@ -156,7 +161,11 @@
           }
         ]
       },
-      "durationMs": 129
+      "evidence": [
+        "customers.register@1: verified"
+      ],
+      "rolledBack": false,
+      "durationMs": 140
     }
   ],
   "totals": {
@@ -165,7 +174,8 @@
     "outputTokens": 293,
     "tokensEstimated": true,
     "rejectedAttempts": 1,
-    "wallMs": 777
+    "rollbacks": 1,
+    "wallMs": 861
   },
   "deterministic": {
     "sourceFilesObserved": 8,
@@ -194,5 +204,5 @@
     "projectSourceBytes": 8750,
     "knowledgeBytesSent": 1339
   },
-  "startedAt": "2026-10-15T22:52:12.603Z"
+  "startedAt": "2026-10-15T23:09:10.566Z"
 }

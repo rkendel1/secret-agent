@@ -1,0 +1,123 @@
+Returning a copy is safer; I also record when the document was opened.
+
+=== FILE: appport/capabilities/documents.ts ===
+import { defineCapability, defineStreamCapability, errors, s } from "@appport/sdk";
+import { annotate, semantic } from "@appport/schema";
+
+// Declared by the contract's author so the agent can verify changes: semantic
+// identity of a document, effects, failures, access, and how a save is confirmed.
+export const DOCUMENT = "https://schema.appport.dev/documents/Document";
+export const DOCUMENT_RESOURCE = "urn:appport:documents:document";
+const documentId = annotate(s.string(), semantic({ concept: DOCUMENT }));
+
+/**
+ * Capabilities are named <namespace>.<operation> and never mention a transport.
+ * The same definitions serve web, desktop and in-process runtimes.
+ */
+const documents = new Map<string, { id: string; title: string; content: string; version: number }>([
+  ["doc_welcome", { id: "doc_welcome", title: "Welcome", content: "Hello from AppPort", version: 1 }]
+]);
+
+export const documentsList = defineCapability({
+  name: "documents.list",
+  version: 1,
+  description: "Lists documents visible to the caller.",
+  authorization: ["documents.read"],
+  effect: "observation",
+  idempotency: "supported",
+  integration: { access: [{ resource: DOCUMENT_RESOURCE, mode: "reads" }] },
+  input: s.object({}),
+  output: s.object({
+    documents: s.array(s.object({ id: documentId, title: s.string(), version: s.integer() }))
+  }),
+  handler() {
+    return { documents: [...documents.values()].map(({ id, title, version }) => ({ id, title, version })) };
+  }
+});
+
+export const documentsOpen = defineCapability({
+  name: "documents.open",
+  version: 1,
+  description: "Reads one document.",
+  authorization: ["documents.read"],
+  effect: "observation",
+  idempotency: "supported",
+  integration: {
+    access: [{ resource: DOCUMENT_RESOURCE, mode: "reads" }],
+    failures: [{ code: "NOT_FOUND", retry: "safe", effect: "none", description: "No such document." }],
+    coverage: { access: "complete", failures: "complete" }
+  },
+  input: s.object({ documentId }),
+  output: s.object({ id: documentId, title: s.string(), content: s.string(), version: s.integer(), openedAt: s.timestamp() }),
+  handler(input) {
+    const document = documents.get(input.documentId);
+    if (!document) throw errors.notFound(`No such document: ${input.documentId}`);
+    // Return a copy so callers never hold the live record, stamped with when it was read.
+    return { ...document, openedAt: new Date().toISOString() };
+  }
+});
+
+export const documentsSave = defineCapability({
+  name: "documents.save",
+  version: 1,
+  description: "Saves a document and publishes documents.changed.",
+  authorization: ["documents.write"],
+  effect: "consequential",
+  idempotency: "supported",
+  concurrency: { mode: "keyed", key: "documentId" },
+  emits: ["documents.changed"],
+  integration: {
+    access: [{ resource: DOCUMENT_RESOURCE, mode: "changes", operations: ["create", "update"] }],
+    verify: [
+      {
+        id: "document-saved",
+        kind: "state",
+        via: { capability: "documents.open", version: 1, input: { documentId: { $input: "/documentId" } } },
+        expect: [
+          { at: "/content", equals: { $input: "/content" } },
+          { at: "/version", equals: { $output: "/version" } }
+        ]
+      },
+      {
+        id: "changed-event",
+        kind: "event",
+        event: "documents.changed",
+        match: { "/documentId": { $input: "/documentId" }, "/version": { $output: "/version" } },
+        strength: "corroborating"
+      }
+    ]
+  },
+  input: s.object({ documentId, content: s.string() }),
+  output: s.object({ version: s.integer() }),
+  async handler(input, context) {
+    const existing = documents.get(input.documentId);
+    const version = (existing?.version ?? 0) + 1;
+    documents.set(input.documentId, {
+      id: input.documentId,
+      title: existing?.title ?? input.documentId,
+      content: input.content,
+      version
+    });
+    await context.emit({ name: "documents.changed", payload: { documentId: input.documentId, version } });
+    return { version };
+  }
+});
+
+export const buildLogs = defineStreamCapability({
+  name: "build.logs",
+  version: 1,
+  description: "Streams build output.",
+  authorization: ["build.execute"],
+  input: s.object({ buildId: s.string() }),
+  output: s.object({ line: s.string() }),
+  async handler(input) {
+    return (async function* () {
+      for (const step of ["resolving", "compiling", "bundling", "done"]) {
+        yield { line: `${input.buildId}: ${step}` };
+      }
+    })();
+  }
+});
+
+export const capabilities = [documentsList, documentsOpen, documentsSave, buildLogs];
+=== END FILE ===

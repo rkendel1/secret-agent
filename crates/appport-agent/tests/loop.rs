@@ -77,6 +77,7 @@ fn agent(project: &Path, responses: PathBuf, max_attempts: u32) -> RunReport {
         report: None,
         log: Some(project.with_extension("log.jsonl")),
         quiet: true,
+        context: Default::default(),
     })
     .unwrap()
 }
@@ -208,4 +209,41 @@ fn the_published_manifest_matches_the_offline_fixture() {
     )
     .unwrap();
     assert_eq!(manifest, fixture, "regenerate crates/agent-core/tests/fixtures/customers.manifest.json");
+}
+
+#[test]
+#[ignore = "needs Node.js and `npm ci` in examples/customers-app"]
+fn eval_runs_every_arm_on_fresh_copies_and_aggregates() {
+    use agent_core::plan::ContextMode;
+    use appport_agent::eval::{eval, EvalOptions};
+
+    let template = workspace("eval-template");
+    let original = fs::read_to_string(template.join(LOOKUP)).unwrap();
+    let out = template.with_extension("eval");
+    let mut model = ModelConfig::new(Provider::Scripted);
+    model.responses = Some(repo().join("examples/scripted/replace-customer-lookup"));
+    let report = eval(&EvalOptions {
+        project: template.clone(),
+        intent: INTENT.into(),
+        model,
+        arms: vec![ContextMode::Knowledge, ContextMode::Bare],
+        trials: 2,
+        max_attempts: 3,
+        host: HostConfig::default(),
+        out: out.clone(),
+        quiet: true,
+    })
+    .unwrap();
+
+    assert_eq!(fs::read_to_string(template.join(LOOKUP)).unwrap(), original, "the template is never changed");
+    for arm in [ContextMode::Knowledge, ContextMode::Bare] {
+        let a = report.arm(arm).unwrap();
+        assert_eq!((a.trials, a.accepted, a.accepted_first_attempt, a.rollbacks), (2, 2, 0, 2), "{a:?}");
+        assert_eq!(a.rejected_by.get("failures.declared"), Some(&2));
+    }
+    let knowledge = report.arm(ContextMode::Knowledge).unwrap().input_tokens;
+    let bare = report.arm(ContextMode::Bare).unwrap().input_tokens;
+    assert!(bare < knowledge, "the bare arm is told less: {bare} vs {knowledge}");
+    assert!(out.join("eval.json").exists() && out.join("eval.md").exists());
+    assert!(out.join("bare-02/report.json").exists());
 }

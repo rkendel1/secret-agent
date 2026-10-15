@@ -89,6 +89,11 @@ pub struct Attempt {
     pub unusable: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub verdict: Option<Verdict>,
+    /// Outcome of each declared verification the candidate ran, e.g. `customers.register@1: verified`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub evidence: Vec<String>,
+    /// Whether the change was undone after rejection.
+    pub rolled_back: bool,
     pub duration_ms: u64,
 }
 
@@ -134,6 +139,7 @@ pub struct Totals {
     pub output_tokens: u64,
     pub tokens_estimated: bool,
     pub rejected_attempts: usize,
+    pub rollbacks: usize,
     pub wall_ms: u64,
 }
 
@@ -142,6 +148,8 @@ pub struct Totals {
 #[serde(rename_all = "camelCase")]
 pub struct RunReport {
     pub intent: String,
+    /// What the model was told: `knowledge` (the agent) or `bare` (the ablation).
+    pub context_mode: String,
     pub project: String,
     pub application: String,
     pub model: String,

@@ -14,6 +14,8 @@ model to invent it.
 | `crates/appport-agent` | The `appport-agent` CLI: observe → plan → model → apply → run the application → judge; metrics and a step-by-step run log. |
 | `examples/customers-app` | A small application built with `@appport/core`, used by the demo and the end-to-end tests. |
 | `scripts/demo.sh` | Reproducible demo of the loop; results committed in `docs/demo/`. |
+| `scripts/closed-loop-test.sh` | The closed-loop autonomy test: rkendel1/appport-services as published, after `npx appport init`, and with its contract declared; then the customers app. With `--config`, a knowledge-vs-bare evaluation with a real model. |
+| `docs/closed-loop-test.md` | What that test showed, and what it cannot show yet. |
 | `docs/agent-loop.md` | How the loop decides, what it checks, how to choose a model, and the demo's metrics. |
 | `tools/appport-inspect` | Build-time inspection of `@appport/*`: writes the surface snapshot and fixtures the Rust model is checked against. |
 | `scripts/check-appport-drift.sh` | Drift check (`--pinned` / `--latest`). |
@@ -38,6 +40,9 @@ npm ci --prefix examples/customers-app
 scripts/demo.sh                                        # scripted completions: reproducible, no key
 scripts/demo.sh --config examples/models/ollama.json   # a local LLM
 scripts/demo.sh --config examples/models/anthropic.json  # a remote provider (ANTHROPIC_API_KEY)
+
+scripts/closed-loop-test.sh                            # the closed-loop test (CI)
+appport-agent eval --project <dir> --intent "..." --config <model.json> --trials 5 --out target/eval
 
 appport-agent plan --project <dir> --intent "replace <name>@<version>: <goal>" --json   # no model involved
 appport-agent run  --project <dir> --intent "..." --config <model.json> --report report.json --log run.jsonl

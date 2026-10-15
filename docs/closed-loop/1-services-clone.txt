@@ -1,0 +1,4 @@
+[  3173 ms] observe      126 source file(s), @appport packages [@appport/protocol@^1.0.3], application not found
+[  3173 ms] observe      finding appport.runtime-absent: package.json no @appport/core or @appport/sdk dependency: the project does not run an AppPort application runtime, so it publishes no manifest to observe
+[  3173 ms] observe      finding application.missing:  no module exports an application built with createApplication
+appport-agent: no AppPort application entry point was found; nothing to run (findings: appport.runtime-absent, application.missing)
