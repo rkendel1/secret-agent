@@ -58,15 +58,33 @@ The same assertions run on `examples/customers-app` (`replace customers.lookup@1
 accepted after 1 rejection and 1 rollback (`failures.declared`,
 `behavior.regression`), 2 model calls, 0.9 s ([report](demo/replace-customer-lookup.report.json)).
 
+## With a real model (PR 4)
+
+The loop has since been run with `claude-opus-5-5` — 41 trials, no scripted completions; see
+[`eval-report.md`](eval-report.md). Summary:
+
+| project | arm | accepted on 1st attempt | accepted after retry | rejected / error |
+|---|---|---|---|---|
+| appport-services (`documents.open@1`) | knowledge | 10/10 | 0 | 0 |
+| appport-services | bare | 10/10 | 0 | 0 |
+| customers-app (`customers.lookup@1`) | knowledge | 10/10 | 0 | 0 |
+| customers-app | bare | 0/10 | 0 | 9 rejected, 1 refusal |
+
+Without the graph-selected context the model never sees `src/store.mjs`, guesses a module that does not exist,
+and the application fails to load; retries with the violations do not recover it. With it, every proposal passes
+all 8 checks on the first try. Where the task needs nothing outside the editable file, both arms succeed and the
+knowledge costs ~31% more tokens.
+
+The sections below describe the scripted runs PR 3 shipped; they remain the deterministic CI test.
+
 ## The model in these runs
 
 Both accepted runs use `--provider scripted`: pre-written completions
 (`examples/*/scripted/`), replayed in order. They stand in for a model so the
 loop is reproducible in CI; each first completion is a plausible mistake
 written to exercise rejection, rollback and retry. **They are not model output,
-and these runs say nothing about how often a real model succeeds.** The session
-that produced this PR had no route to a model: Hugging Face, Ollama and GitHub
-release downloads were blocked by its network policy, and no API key was set.
+and these runs say nothing about how often a real model succeeds** — for that, see
+[`eval-report.md`](eval-report.md).
 
 ## Answers, as far as the evidence goes
 

@@ -1,0 +1,11 @@
+--- a/appport/capabilities/documents.ts
++++ b/appport/capabilities/documents.ts
+@@ -49,7 +49,7 @@
+   handler(input) {
+     const document = documents.get(input.documentId);
+     if (!document) throw errors.notFound(`No such document: ${input.documentId}`);
+-    return document;
++    return { id: document.id, title: document.title, content: document.content, version: document.version };
+   }
+ });
+ 

@@ -1,0 +1,31 @@
+--- a/src/handlers/customers.lookup.mjs
++++ b/src/handlers/customers.lookup.mjs
+@@ -1,17 +1,19 @@
+ import { errors } from "@appport/protocol";
+-import { readExport, TIERS } from "../legacy/crm.mjs";
++import { getCustomer } from "../store.mjs";
+ 
+-// Reads the legacy CRM export.
++// Reads the application's customer store, the system of record for
++// `urn:example:customers:customer`. The store is seeded from the legacy CRM
++// export at start-up and then written by `customers.register`.
+ export async function lookupCustomer(input) {
+-  const row = readExport().find((r) => r.cust_id === input.customerId);
+-  if (!row) {
++  const customer = getCustomer(input.customerId);
++  if (!customer) {
+     throw errors.notFound(`no customer ${input.customerId}`);
+   }
+   return {
+-    customerId: row.cust_id,
+-    name: row.full_name,
+-    email: row.mail,
+-    tier: TIERS[row.level],
+-    since: row.created
++    customerId: customer.customerId,
++    name: customer.name,
++    email: customer.email,
++    tier: customer.tier,
++    since: customer.since
+   };
+ }

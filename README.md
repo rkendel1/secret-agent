@@ -15,7 +15,8 @@ model to invent it.
 | `examples/customers-app` | A small application built with `@appport/core`, used by the demo and the end-to-end tests. |
 | `scripts/demo.sh` | Reproducible demo of the loop; results committed in `docs/demo/`. |
 | `scripts/closed-loop-test.sh` | The closed-loop autonomy test: rkendel1/appport-services as published, after `npx appport init`, and with its contract declared; then the customers app. With `--config`, a knowledge-vs-bare evaluation with a real model. |
-| `docs/closed-loop-test.md` | What that test showed, and what it cannot show yet. |
+| `docs/closed-loop-test.md` | What that test showed. |
+| `docs/eval-report.md` | The real-model evaluation (Opus 5.5): with vs without AppPort knowledge; raw runs in `docs/eval/`. |
 | `docs/agent-loop.md` | How the loop decides, what it checks, how to choose a model, and the demo's metrics. |
 | `tools/appport-inspect` | Build-time inspection of `@appport/*`: writes the surface snapshot and fixtures the Rust model is checked against. |
 | `scripts/check-appport-drift.sh` | Drift check (`--pinned` / `--latest`). |
