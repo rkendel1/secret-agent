@@ -53,6 +53,29 @@ pub fn parse(text: &str) -> Result<Vec<FileEdit>, String> {
     Ok(edits)
 }
 
+/// A response with no file block: if exactly one file is editable and the
+/// response holds exactly one fenced code block, that block is the file.
+/// Anything less certain stays unusable.
+pub fn single_fenced(text: &str, editable: &[String]) -> Option<FileEdit> {
+    let [path] = editable else { return None };
+    let mut blocks = Vec::new();
+    let mut current: Option<Vec<&str>> = None;
+    for line in text.lines() {
+        if line.trim_start().starts_with("```") {
+            match current.take() {
+                Some(body) => blocks.push(body),
+                None => current = Some(Vec::new()),
+            }
+        } else if let Some(body) = current.as_mut() {
+            body.push(line);
+        }
+    }
+    let [body] = blocks.as_slice() else { return None };
+    let mut contents = body.join("\n");
+    contents.push('\n');
+    Some(FileEdit { path: path.clone(), contents })
+}
+
 /// The files an edit set touches, normalized; `Err` for a path outside the project.
 pub fn targets(edits: &[FileEdit]) -> Result<Vec<String>, String> {
     edits
@@ -115,6 +138,16 @@ mod tests {
         );
         assert!(parse("no blocks").is_err());
         assert!(parse("=== FILE: a.mjs ===\nunterminated").is_err());
+    }
+
+    #[test]
+    fn takes_a_single_fenced_block_only_when_unambiguous() {
+        let one = vec!["src/a.mjs".to_string()];
+        let text = "Sure:\n```js\nexport const a = 2;\n```\nDone.";
+        assert_eq!(single_fenced(text, &one).unwrap().contents, "export const a = 2;\n");
+        assert!(single_fenced("```\na\n```\n```\nb\n```", &one).is_none(), "two blocks are ambiguous");
+        assert!(single_fenced(text, &["a".into(), "b".into()]).is_none(), "two editable files are ambiguous");
+        assert!(single_fenced("no code", &one).is_none());
     }
 
     #[test]

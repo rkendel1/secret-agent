@@ -10,6 +10,7 @@
 
 pub mod collect;
 pub mod edit;
+pub mod eval;
 pub mod host;
 pub mod report;
 pub mod run;

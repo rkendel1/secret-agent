@@ -1,0 +1,130 @@
+{
+  "intent": "replace customers.lookup@1: read customers from the application's customer store instead of the legacy CRM export",
+  "contextMode": "knowledge",
+  "project": "target/live/opus-customers-app/knowledge-05/project",
+  "application": "com.example.customers",
+  "model": "anthropic:claude-opus-5-5 via https://api.anthropic.com/v1/messages",
+  "outcome": "accepted",
+  "baselineFailures": [
+    "[verification] customers.register@1#customer-readable unavailable (NOT_FOUND): a state method must confirm"
+  ],
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "claude-opus-5-5",
+      "usage": {
+        "input_tokens": 2693,
+        "output_tokens": 406,
+        "estimated": false
+      },
+      "promptBytes": 7344,
+      "responseBytes": 699,
+      "filesChanged": [
+        "src/handlers/customers.lookup.mjs"
+      ],
+      "verdict": {
+        "accepted": true,
+        "checks": [
+          {
+            "code": "edit.boundary",
+            "rule": "only the target's implementation module changes",
+            "status": "pass"
+          },
+          {
+            "code": "runtime.load",
+            "rule": "the application loads and answers appport.manifest@1",
+            "status": "pass"
+          },
+          {
+            "code": "contract.identity",
+            "rule": "the published contract is unchanged (contractDigest sha256:4f6660b5135b)",
+            "status": "pass",
+            "notes": [
+              "contractDigest sha256:4f6660b5135b0053debb5f16c4ce458cae6d62832a841672483b69e880c997ca"
+            ]
+          },
+          {
+            "code": "contract.valid",
+            "rule": "the published contract has no validation errors",
+            "status": "pass"
+          },
+          {
+            "code": "output.conformance",
+            "rule": "every output observed conforms to its declared output schema",
+            "status": "pass",
+            "notes": [
+              "9 output(s) conform"
+            ]
+          },
+          {
+            "code": "failures.declared",
+            "rule": "customers.lookup@1 fails only with its declared failure codes (NOT_FOUND)",
+            "status": "pass"
+          },
+          {
+            "code": "behavior.regression",
+            "rule": "answers on existing state are unchanged for customers.lookup@1, billing.contact@1",
+            "status": "pass",
+            "notes": [
+              "8 answer(s) on existing state unchanged"
+            ]
+          },
+          {
+            "code": "verification",
+            "rule": "customers.register@1: declared verification (customer-readable, registered-event) is not contradicted and every state method confirms",
+            "status": "pass",
+            "notes": [
+              "customers.register@1#customer-readable confirmed (establishes)",
+              "customers.register@1#registered-event confirmed (corroborates)"
+            ]
+          }
+        ]
+      },
+      "evidence": [
+        "customers.register@1: verified"
+      ],
+      "rolledBack": false,
+      "stopReason": "end_turn",
+      "contractChanged": false,
+      "outsideBoundary": false,
+      "durationMs": 4715
+    }
+  ],
+  "totals": {
+    "modelCalls": 1,
+    "inputTokens": 2693,
+    "outputTokens": 406,
+    "tokensEstimated": false,
+    "rejectedAttempts": 0,
+    "rollbacks": 0,
+    "wallMs": 5296
+  },
+  "deterministic": {
+    "sourceFilesObserved": 8,
+    "capabilitiesInContract": 6,
+    "capabilitiesLocatedInSource": 4,
+    "graphNodes": 9,
+    "graphEdges": 13,
+    "dependentsOfTarget": 2,
+    "replacementConstraints": 9,
+    "acceptanceChecks": 8,
+    "decisions": 15,
+    "permissionsGranted": [
+      "customers.read",
+      "customers.write"
+    ],
+    "applicationRuns": 3,
+    "envelopesExchanged": 29,
+    "verificationMethodsEvaluated": 4,
+    "modelCallsForDiscovery": 0,
+    "modelCallsForVerification": 0
+  },
+  "context": {
+    "filesSent": 5,
+    "projectSourceFiles": 8,
+    "sourceBytesSent": 2678,
+    "projectSourceBytes": 8750,
+    "knowledgeBytesSent": 1339
+  },
+  "startedAt": "2026-10-15T23:25:16.258Z"
+}

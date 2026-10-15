@@ -4,6 +4,7 @@ use std::process::{Command, Stdio};
 use std::time::Duration;
 
 use serde_json::{json, Value};
+use ureq::tls::{RootCerts, TlsConfig};
 use ureq::Agent;
 
 use crate::{Model, ModelConfig, ModelError, Provider, Request, Response, Usage};
@@ -22,6 +23,9 @@ fn agent(config: &ModelConfig) -> Agent {
     Agent::config_builder()
         .timeout_global(Some(Duration::from_secs(config.timeout_secs)))
         .http_status_as_error(false)
+        // The operating system's trust store, so TLS-inspecting proxies the
+        // machine already trusts work too, not only the bundled Mozilla roots.
+        .tls_config(TlsConfig::builder().root_certs(RootCerts::PlatformVerifier).build())
         .build()
         .into()
 }
@@ -114,7 +118,8 @@ impl Model for OpenAiCompatibleModel {
             _ => Usage::estimate(&format!("{}{}", request.system, request.prompt), &text),
         };
         let model = answer.get("model").and_then(Value::as_str).unwrap_or(&self.model).to_string();
-        Ok(Response { text, usage, model })
+        let stop_reason = answer.pointer("/choices/0/finish_reason").and_then(Value::as_str).map(str::to_string);
+        Ok(Response { text, usage, model, stop_reason })
     }
 }
 
@@ -124,8 +129,10 @@ pub struct AnthropicModel {
     url: String,
     model: String,
     key: String,
+    workspace: Option<String>,
     max_tokens: u32,
     temperature: Option<f64>,
+    effort: Option<String>,
 }
 
 impl AnthropicModel {
@@ -136,8 +143,12 @@ impl AnthropicModel {
             url: format!("{}/v1/messages", trim_url(&base)),
             model: config.model.clone().ok_or_else(|| ModelError::Config("anthropic needs a model name".into()))?,
             key: key(config, "ANTHROPIC_API_KEY", true)?.unwrap_or_default(),
+            workspace: std::env::var(config.workspace_id_env.as_deref().unwrap_or("ANTHROPIC_WORKSPACE_ID"))
+                .ok()
+                .filter(|w| !w.is_empty()),
             max_tokens: config.max_tokens,
             temperature: config.temperature,
+            effort: config.effort.clone(),
         })
     }
 }
@@ -157,8 +168,22 @@ impl Model for AnthropicModel {
         if let Some(t) = self.temperature {
             body["temperature"] = json!(t);
         }
-        let headers = [("x-api-key", self.key.clone()), ("anthropic-version", "2023-06-01".to_string())];
+        if let Some(effort) = &self.effort {
+            body["output_config"] = json!({ "effort": effort });
+        }
+        let mut headers = vec![("x-api-key", self.key.clone()), ("anthropic-version", "2023-06-01".to_string())];
+        if let Some(workspace) = &self.workspace {
+            headers.push(("anthropic-workspace-id", workspace.clone()));
+        }
         let answer = post(&self.agent, &self.url, &headers, &body)?;
+        let stop_reason = answer.get("stop_reason").and_then(Value::as_str).map(str::to_string);
+        if stop_reason.as_deref() == Some("refusal") {
+            // Never retried on another model here: that would change what is being measured.
+            return Err(ModelError::Protocol(format!(
+                "the model declined (stop_reason refusal, category {})",
+                answer.pointer("/stop_details/category").unwrap_or(&Value::Null)
+            )));
+        }
         let text: String = answer
             .get("content")
             .and_then(Value::as_array)
@@ -173,7 +198,7 @@ impl Model for AnthropicModel {
             estimated: answer.get("usage").is_none(),
         };
         let model = answer.get("model").and_then(Value::as_str).unwrap_or(&self.model).to_string();
-        Ok(Response { text, usage, model })
+        Ok(Response { text, usage, model, stop_reason })
     }
 }
 
@@ -233,7 +258,7 @@ impl Model for CommandModel {
             return Err(ModelError::Transport(format!("{} exited with {status}", self.command[0])));
         }
         let usage = Usage::estimate(&format!("{}{}", request.system, request.prompt), &text);
-        Ok(Response { text, usage, model: self.command[0].clone() })
+        Ok(Response { text, usage, model: self.command[0].clone(), stop_reason: None })
     }
 }
 
@@ -280,6 +305,6 @@ impl Model for ScriptedModel {
             std::fs::read_to_string(path).map_err(|e| ModelError::Transport(format!("{}: {e}", path.display())))?;
         let usage = Usage::estimate(&format!("{}{}", request.system, request.prompt), &text);
         let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
-        Ok(Response { text, usage, model: format!("scripted/{name}") })
+        Ok(Response { text, usage, model: format!("scripted/{name}"), stop_reason: None })
     }
 }

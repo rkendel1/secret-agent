@@ -164,6 +164,16 @@ size).
 
 CI runs the last group and the demo in the `agent-e2e` job.
 
+## Context modes and the evaluation
+
+`--context bare` sends only the goal and the editable file (the ablation);
+`appport-agent eval` runs both modes over many trials. See
+`docs/closed-loop-test.md`.
+
+The planner refuses with `contract.unverifiable` when no regression probe and
+no declared verification could observe the target's behaviour: a change there
+would be accepted on structure alone.
+
 ## Limits
 
 - One intent: `replace <capability>@<version>` for a request capability, with an

@@ -1,0 +1,128 @@
+{
+  "intent": "replace documents.open@1: return a copy of the stored document instead of the live record",
+  "contextMode": "bare",
+  "project": "target/live/opus-appport-services/bare-06/project",
+  "application": "com.example.appportservices",
+  "model": "anthropic:claude-opus-5-5 via https://api.anthropic.com/v1/messages",
+  "outcome": "accepted",
+  "baselineFailures": [],
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "claude-opus-5-5",
+      "usage": {
+        "input_tokens": 1819,
+        "output_tokens": 1710,
+        "estimated": false
+      },
+      "promptBytes": 4851,
+      "responseBytes": 4532,
+      "filesChanged": [
+        "appport/capabilities/documents.ts"
+      ],
+      "verdict": {
+        "accepted": true,
+        "checks": [
+          {
+            "code": "edit.boundary",
+            "rule": "only the target's implementation module changes",
+            "status": "pass"
+          },
+          {
+            "code": "runtime.load",
+            "rule": "the application loads and answers appport.manifest@1",
+            "status": "pass"
+          },
+          {
+            "code": "contract.identity",
+            "rule": "the published contract is unchanged (contractDigest sha256:1142b61376d9)",
+            "status": "pass",
+            "notes": [
+              "contractDigest sha256:1142b61376d911ba33f12a27291d85997face48288d573655bc992c803bcb0d5"
+            ]
+          },
+          {
+            "code": "contract.valid",
+            "rule": "the published contract has no validation errors",
+            "status": "pass"
+          },
+          {
+            "code": "output.conformance",
+            "rule": "every output observed conforms to its declared output schema",
+            "status": "pass",
+            "notes": [
+              "5 output(s) conform"
+            ]
+          },
+          {
+            "code": "failures.declared",
+            "rule": "documents.open@1 fails only with its declared failure codes (NOT_FOUND)",
+            "status": "pass"
+          },
+          {
+            "code": "behavior.regression",
+            "rule": "answers on existing state are unchanged for documents.open@1, documents.list@1",
+            "status": "pass",
+            "notes": [
+              "3 answer(s) on existing state unchanged"
+            ]
+          },
+          {
+            "code": "verification",
+            "rule": "documents.save@1: declared verification (document-saved, changed-event) is not contradicted and every state method confirms",
+            "status": "pass",
+            "notes": [
+              "documents.save@1#document-saved confirmed (establishes)",
+              "documents.save@1#changed-event confirmed (corroborates)"
+            ]
+          }
+        ]
+      },
+      "evidence": [
+        "documents.save@1: verified"
+      ],
+      "rolledBack": false,
+      "stopReason": "end_turn",
+      "contractChanged": false,
+      "outsideBoundary": false,
+      "durationMs": 12231
+    }
+  ],
+  "totals": {
+    "modelCalls": 1,
+    "inputTokens": 1819,
+    "outputTokens": 1710,
+    "tokensEstimated": false,
+    "rejectedAttempts": 0,
+    "rollbacks": 0,
+    "wallMs": 16120
+  },
+  "deterministic": {
+    "sourceFilesObserved": 131,
+    "capabilitiesInContract": 6,
+    "capabilitiesLocatedInSource": 3,
+    "graphNodes": 9,
+    "graphEdges": 12,
+    "dependentsOfTarget": 1,
+    "replacementConstraints": 8,
+    "acceptanceChecks": 8,
+    "decisions": 12,
+    "permissionsGranted": [
+      "documents.read",
+      "documents.write"
+    ],
+    "applicationRuns": 3,
+    "envelopesExchanged": 19,
+    "verificationMethodsEvaluated": 4,
+    "modelCallsForDiscovery": 0,
+    "modelCallsForVerification": 0
+  },
+  "context": {
+    "filesSent": 1,
+    "projectSourceFiles": 131,
+    "sourceBytesSent": 4391,
+    "projectSourceBytes": 1042104,
+    "knowledgeBytesSent": 0
+  },
+  "startedAt": "2026-10-15T23:26:54.731Z"
+}

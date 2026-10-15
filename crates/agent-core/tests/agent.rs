@@ -95,6 +95,25 @@ fn refuses_what_it_cannot_ground() {
     assert_eq!(refuse("replace customers.missing@1"), "target.undeclared");
     assert_eq!(refuse("replace customers.lookup@2"), "target.undeclared");
     assert_eq!(refuse("replace appport.ping@1"), "target.builtin");
+
+    // The same contract without the facts that make the change verifiable:
+    // no declared effect on the target, no verification method through it.
+    let mut manifest = fixture("customers.manifest.json");
+    for capability in manifest["capabilities"].as_array_mut().unwrap() {
+        if capability["name"] == "customers.lookup" {
+            capability.as_object_mut().unwrap().remove("effect");
+            capability["definitions"][0].as_object_mut().unwrap().remove("effect");
+        }
+    }
+    let integration = &mut manifest["attributes"]["appport.integration/1"]["capabilities"];
+    integration["customers.register@1"].as_object_mut().unwrap().remove("verify");
+    integration["billing.contact@1"].as_object_mut().unwrap().remove("requires");
+    let contract = Contract::from_value(manifest).unwrap();
+    let mut project = project();
+    // billing.contact imports the lookup module; drop it so nothing reaches the target.
+    project.capabilities.retain(|c| c.name != "billing.contact");
+    let refusal = plan(&Intent::parse(INTENT).unwrap(), &contract, &project).unwrap_err();
+    assert_eq!(refusal.code, "contract.unverifiable", "{refusal}");
 }
 
 fn reply(output: Value) -> Reply {

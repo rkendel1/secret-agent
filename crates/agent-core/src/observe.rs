@@ -21,6 +21,8 @@ use regex::Regex;
 use serde::Serialize;
 
 const SOURCE_EXTENSIONS: [&str; 6] = ["mjs", "js", "cjs", "mts", "ts", "cts"];
+/// Packages that provide the application runtime (`createApplication`, `defineCapability`).
+pub const RUNTIME_PACKAGES: [&str; 2] = ["@appport/core", "@appport/sdk"];
 const SKIP_DIRECTORIES: [&str; 5] = ["node_modules", ".git", "target", "dist", "coverage"];
 
 /// A project as observed on disk. Paths are relative to `root`, with `/` separators.
@@ -170,6 +172,12 @@ pub fn observe(root: &Path) -> io::Result<Project> {
             "appport.absent",
             "package.json",
             "the project does not depend on any @appport/* package",
+        ));
+    } else if !RUNTIME_PACKAGES.iter().any(|p| appport_packages.contains_key(*p)) {
+        findings.push(finding(
+            "appport.runtime-absent",
+            "package.json",
+            "no @appport/core or @appport/sdk dependency: the project does not run an AppPort application runtime, so it publishes no manifest to observe",
         ));
     }
 

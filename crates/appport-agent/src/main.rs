@@ -4,7 +4,9 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 use std::time::Duration;
 
+use agent_core::plan::ContextMode;
 use agent_model::{ModelConfig, Provider};
+use appport_agent::eval::{eval, markdown, EvalOptions};
 use appport_agent::host::HostConfig;
 use appport_agent::report::Log;
 use appport_agent::run::{prepare, run, RunOptions};
@@ -17,6 +19,8 @@ satisfies its contract.
 USAGE
   appport-agent run  --project <dir> --intent <text> [model options] [run options]
   appport-agent plan --project <dir> --intent <text> [--json]
+  appport-agent eval --project <dir> --intent <text> [model options] --out <dir>
+                     [--trials <n>] [--arms knowledge,bare] [--max-attempts <n>]
 
 INTENT
   \"replace <capability>@<version>[: <goal>]\"
@@ -37,10 +41,17 @@ RUN OPTIONS
   --log <file.jsonl>       write the step-by-step run log
   --node <path>            Node.js executable (default: node)
   --timeout <secs>         longest wait for one application response (default 20)
+  --context <mode>         what the model is told: knowledge (default) or bare (the ablation)
   --quiet                  no progress on stderr
 
+EVAL OPTIONS
+  --out <dir>              where trials, eval.json and eval.md go
+  --trials <n>             trials per arm (default 5); each starts from a fresh copy of --project
+  --arms <list>            comma-separated context modes (default knowledge,bare)
+
 EXIT STATUS
-  0 accepted, 1 rejected, 2 error";
+  run: 0 accepted, 1 rejected, 2 error
+  eval: 0 when the first arm accepted at least one trial, 1 otherwise, 2 error";
 
 fn main() -> ExitCode {
     match main_inner() {
@@ -72,7 +83,7 @@ fn main_inner() -> Result<ExitCode, String> {
     let get = |name: &str| flags.iter().rev().find(|(n, _)| n == name).and_then(|(_, v)| v.clone());
     let has = |name: &str| flags.iter().any(|(n, _)| n == name);
     for (name, _) in &flags {
-        const KNOWN: [&str; 17] = [
+        const KNOWN: [&str; 21] = [
             "project",
             "intent",
             "config",
@@ -90,6 +101,10 @@ fn main_inner() -> Result<ExitCode, String> {
             "timeout",
             "quiet",
             "json",
+            "context",
+            "out",
+            "trials",
+            "arms",
         ];
         if !KNOWN.contains(&name.as_str()) {
             return Err(format!("unknown option --{name}\n\n{USAGE}"));
@@ -116,6 +131,7 @@ fn main_inner() -> Result<ExitCode, String> {
                 report: None,
                 log: get("log").map(PathBuf::from),
                 quiet: has("json") || has("quiet"),
+                context: ContextMode::Knowledge,
             };
             let mut log = Log::new(options.log.as_deref(), options.quiet).map_err(|e| e.to_string())?;
             let prepared = prepare(&options, &mut log)?;
@@ -124,7 +140,7 @@ fn main_inner() -> Result<ExitCode, String> {
             }
             Ok(ExitCode::SUCCESS)
         }
-        "run" => {
+        "run" | "eval" => {
             let mut model = match get("config") {
                 Some(path) => ModelConfig::from_file(path.as_ref()).map_err(|e| e.to_string())?,
                 None => ModelConfig::new(
@@ -155,18 +171,48 @@ fn main_inner() -> Result<ExitCode, String> {
             if let Some(v) = get("max-tokens") {
                 model.max_tokens = v.parse().map_err(|_| "--max-tokens must be a number")?;
             }
+            let max_attempts = get("max-attempts")
+                .map(|n| n.parse().map_err(|_| "--max-attempts must be a number"))
+                .transpose()?
+                .unwrap_or(3);
+            if command == "eval" {
+                let arms = get("arms")
+                    .unwrap_or_else(|| "knowledge,bare".into())
+                    .split(',')
+                    .map(|a| a.trim().parse::<ContextMode>())
+                    .collect::<Result<Vec<_>, _>>()?;
+                let first = *arms.first().ok_or("--arms is empty")?;
+                let report = eval(&EvalOptions {
+                    project,
+                    intent,
+                    model,
+                    arms,
+                    trials: get("trials")
+                        .map(|n| n.parse().map_err(|_| "--trials must be a number"))
+                        .transpose()?
+                        .unwrap_or(5),
+                    max_attempts,
+                    host,
+                    out: PathBuf::from(get("out").ok_or("--out is required")?),
+                    quiet: has("quiet"),
+                })?;
+                println!("{}", markdown(&report));
+                return Ok(if report.arm(first).is_some_and(|a| a.accepted > 0) {
+                    ExitCode::SUCCESS
+                } else {
+                    ExitCode::from(1)
+                });
+            }
             let options = RunOptions {
                 project,
                 intent,
                 model,
-                max_attempts: get("max-attempts")
-                    .map(|n| n.parse().map_err(|_| "--max-attempts must be a number"))
-                    .transpose()?
-                    .unwrap_or(3),
+                max_attempts,
                 host,
                 report: get("report").map(PathBuf::from),
                 log: get("log").map(PathBuf::from),
                 quiet: has("quiet"),
+                context: get("context").map(|c| c.parse::<ContextMode>()).transpose()?.unwrap_or_default(),
             };
             let report = run(&options)?;
             Ok(if report.outcome == "accepted" { ExitCode::SUCCESS } else { ExitCode::from(1) })

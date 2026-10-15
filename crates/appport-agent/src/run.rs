@@ -6,7 +6,7 @@ use std::time::Instant;
 
 use agent_core::appport::knowledge::{model_json, Contract};
 use agent_core::observe::{observe, Project};
-use agent_core::plan::{model_task, plan, Intent, Plan};
+use agent_core::plan::{plan, task_for, ContextMode, Intent, Plan};
 use agent_core::verify::{judge, CheckStatus, Session, Verdict};
 use agent_model::{connect, Model, ModelConfig, Request};
 use serde_json::json;
@@ -27,6 +27,8 @@ pub struct RunOptions {
     pub report: Option<PathBuf>,
     pub log: Option<PathBuf>,
     pub quiet: bool,
+    /// What the model is told (the verifier is the same either way).
+    pub context: ContextMode,
 }
 
 /// What observation and planning established, before any model call.
@@ -77,7 +79,12 @@ pub fn prepare(options: &RunOptions, log: &mut Log) -> Result<Prepared, String> 
             format!("finding {}: {} {}", finding.code, finding.path, finding.message),
         );
     }
-    let entry = project.application.clone().ok_or("no application entry point was found; nothing to run")?;
+    let entry = project.application.clone().ok_or_else(|| {
+        format!(
+            "no AppPort application entry point was found; nothing to run (findings: {})",
+            project.findings.iter().map(|f| f.code.as_str()).collect::<Vec<_>>().join(", ")
+        )
+    })?;
 
     let (manifest, envelopes) = discover(&options.host, &project.root, &entry)?;
     let contract = Contract::from_value(manifest).map_err(|e| e.to_string())?;
@@ -158,12 +165,19 @@ pub fn run(options: &RunOptions) -> Result<RunReport, String> {
     for file in &plan.context {
         files.insert(file.path.clone(), project.read(&file.path).map_err(|e| format!("{}: {e}", file.path))?);
     }
+    let sent: Vec<&String> = match options.context {
+        ContextMode::Knowledge => files.values().collect(),
+        ContextMode::Bare => editable.iter().filter_map(|p| files.get(p)).collect(),
+    };
     let context = Context {
-        files_sent: plan.context.len(),
+        files_sent: sent.len(),
         project_source_files: project.sources.len(),
-        source_bytes_sent: files.values().map(String::len).sum(),
+        source_bytes_sent: sent.iter().map(|f| f.len()).sum(),
         project_source_bytes: project.source_bytes(),
-        knowledge_bytes_sent: model_json(&plan.view).len(),
+        knowledge_bytes_sent: match options.context {
+            ContextMode::Knowledge => model_json(&plan.view).len(),
+            ContextMode::Bare => 0,
+        },
     };
 
     let mut attempts = Vec::new();
@@ -171,7 +185,7 @@ pub fn run(options: &RunOptions) -> Result<RunReport, String> {
     let mut accepted = false;
     for attempt in 1..=options.max_attempts.max(1) {
         let began = Instant::now();
-        let task = model_task(&plan, &files, &feedback);
+        let task = task_for(options.context, &plan, &files, &feedback);
         log.event(
             "model",
             json!({ "attempt": attempt, "task": &task }),
@@ -204,10 +218,33 @@ pub fn run(options: &RunOptions) -> Result<RunReport, String> {
             files_changed: Vec::new(),
             unusable: None,
             verdict: None,
+            evidence: Vec::new(),
+            rolled_back: false,
+            stop_reason: response.stop_reason.clone(),
+            contract_changed: false,
+            outside_boundary: false,
             duration_ms: 0,
         };
 
-        let edits = match edit::parse(&response.text).and_then(|e| edit::targets(&e).map(|t| (e, t))) {
+        let parsed =
+            edit::parse(&response.text).or_else(|problem| match edit::single_fenced(&response.text, &editable) {
+                Some(single) => {
+                    log.event(
+                        "apply",
+                        json!({ "attempt": attempt, "lenient": &single.path }),
+                        format!(
+                            "attempt {attempt}: no file block; the response's only code block is taken as {}",
+                            single.path
+                        ),
+                    );
+                    Ok(vec![single])
+                }
+                None if response.stop_reason.as_deref() == Some("max_tokens") => {
+                    Err(format!("{problem} (the response was cut off at max_tokens)"))
+                }
+                None => Err(problem),
+            });
+        let edits = match parsed.and_then(|e| edit::targets(&e).map(|t| (e, t))) {
             Ok(parsed) => parsed,
             Err(problem) => {
                 log.event(
@@ -259,6 +296,18 @@ pub fn run(options: &RunOptions) -> Result<RunReport, String> {
         deterministic.verification_methods_evaluated +=
             candidate.evidence.iter().map(|e| e.methods.len()).sum::<usize>();
         record.files_changed = changed;
+        let failed = |code: &str| verdict.checks.iter().any(|c| c.code == code && c.status == CheckStatus::Fail);
+        record.outside_boundary = failed("edit.boundary");
+        // Only meaningful when the application ran and published a manifest.
+        record.contract_changed = candidate.manifest.is_some() && failed("contract.identity");
+        record.evidence = candidate
+            .evidence
+            .iter()
+            .map(|e| {
+                let outcome = serde_json::to_value(e.outcome).ok().and_then(|v| v.as_str().map(str::to_string));
+                format!("{}@{}: {}", e.capability.name, e.capability.version, outcome.unwrap_or_default())
+            })
+            .collect();
         record.duration_ms = began.elapsed().as_millis() as u64;
         if verdict.accepted {
             record.verdict = Some(verdict);
@@ -268,6 +317,7 @@ pub fn run(options: &RunOptions) -> Result<RunReport, String> {
         }
         if let Some(applied) = applied {
             edit::rollback(&root, applied);
+            record.rolled_back = true;
             log.event(
                 "apply",
                 json!({ "attempt": attempt }),
@@ -287,10 +337,12 @@ pub fn run(options: &RunOptions) -> Result<RunReport, String> {
         output_tokens: attempts.iter().map(|a| a.usage.output_tokens).sum(),
         tokens_estimated: attempts.iter().any(|a| a.usage.estimated),
         rejected_attempts: attempts.iter().filter(|a| !a.verdict.as_ref().is_some_and(|v| v.accepted)).count(),
+        rollbacks: attempts.iter().filter(|a| a.rolled_back).count(),
         wall_ms: log.elapsed_ms() as u64,
     };
     let report = RunReport {
         intent: options.intent.clone(),
+        context_mode: options.context.to_string(),
         project: display(&options.project),
         application: plan.application.clone(),
         model: model.describe(),

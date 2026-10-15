@@ -1,0 +1,102 @@
+diff -ruN a/appport/capabilities/documents.ts b/appport/capabilities/documents.ts
+--- a/appport/capabilities/documents.ts
++++ b/appport/capabilities/documents.ts
+@@ -1,4 +1,11 @@
+ import { defineCapability, defineStreamCapability, errors, s } from "@appport/sdk";
++import { annotate, semantic } from "@appport/schema";
++
++// Declared by the contract's author so the agent can verify changes: semantic
++// identity of a document, effects, failures, access, and how a save is confirmed.
++export const DOCUMENT = "https://schema.appport.dev/documents/Document";
++export const DOCUMENT_RESOURCE = "urn:appport:documents:document";
++const documentId = annotate(s.string(), semantic({ concept: DOCUMENT }));
+ 
+ /**
+  * Capabilities are named <namespace>.<operation> and never mention a transport.
+@@ -13,9 +20,12 @@
+   version: 1,
+   description: "Lists documents visible to the caller.",
+   authorization: ["documents.read"],
++  effect: "observation",
++  idempotency: "supported",
++  integration: { access: [{ resource: DOCUMENT_RESOURCE, mode: "reads" }] },
+   input: s.object({}),
+   output: s.object({
+-    documents: s.array(s.object({ id: s.string(), title: s.string(), version: s.integer() }))
++    documents: s.array(s.object({ id: documentId, title: s.string(), version: s.integer() }))
+   }),
+   handler() {
+     return { documents: [...documents.values()].map(({ id, title, version }) => ({ id, title, version })) };
+@@ -27,8 +37,15 @@
+   version: 1,
+   description: "Reads one document.",
+   authorization: ["documents.read"],
+-  input: s.object({ documentId: s.string() }),
+-  output: s.object({ id: s.string(), title: s.string(), content: s.string(), version: s.integer() }),
++  effect: "observation",
++  idempotency: "supported",
++  integration: {
++    access: [{ resource: DOCUMENT_RESOURCE, mode: "reads" }],
++    failures: [{ code: "NOT_FOUND", retry: "safe", effect: "none", description: "No such document." }],
++    coverage: { access: "complete", failures: "complete" }
++  },
++  input: s.object({ documentId }),
++  output: s.object({ id: documentId, title: s.string(), content: s.string(), version: s.integer() }),
+   handler(input) {
+     const document = documents.get(input.documentId);
+     if (!document) throw errors.notFound(`No such document: ${input.documentId}`);
+@@ -41,10 +58,32 @@
+   version: 1,
+   description: "Saves a document and publishes documents.changed.",
+   authorization: ["documents.write"],
++  effect: "consequential",
+   idempotency: "supported",
+   concurrency: { mode: "keyed", key: "documentId" },
+   emits: ["documents.changed"],
+-  input: s.object({ documentId: s.string(), content: s.string() }),
++  integration: {
++    access: [{ resource: DOCUMENT_RESOURCE, mode: "changes", operations: ["create", "update"] }],
++    verify: [
++      {
++        id: "document-saved",
++        kind: "state",
++        via: { capability: "documents.open", version: 1, input: { documentId: { $input: "/documentId" } } },
++        expect: [
++          { at: "/content", equals: { $input: "/content" } },
++          { at: "/version", equals: { $output: "/version" } }
++        ]
++      },
++      {
++        id: "changed-event",
++        kind: "event",
++        event: "documents.changed",
++        match: { "/documentId": { $input: "/documentId" }, "/version": { $output: "/version" } },
++        strength: "corroborating"
++      }
++    ]
++  },
++  input: s.object({ documentId, content: s.string() }),
+   output: s.object({ version: s.integer() }),
+   async handler(input, context) {
+     const existing = documents.get(input.documentId);
+diff -ruN a/appport/server.ts b/appport/server.ts
+--- a/appport/server.ts
++++ b/appport/server.ts
+@@ -1,5 +1,5 @@
+ import { createApplication, createServer, permissionAuthorizer } from "@appport/sdk";
+-import { capabilities } from "./capabilities/documents.ts";
++import { capabilities, DOCUMENT, DOCUMENT_RESOURCE } from "./capabilities/documents.ts";
+ import { events } from "./events.ts";
+ 
+ /**
+@@ -15,7 +15,9 @@
+   },
+   capabilities,
+   events,
+-  authorizer: permissionAuthorizer()
++  authorizer: permissionAuthorizer(),
++  resources: [{ id: DOCUMENT_RESOURCE, kind: "document", concept: DOCUMENT, owner: "self" }],
++  extensions: ["appport.integration/1"]
+ });
+ 
+ export const server = createServer({

@@ -23,7 +23,7 @@ jobs:
       - run: cargo test --all
 
   agent-e2e:
-    # The loop against a real AppPort runtime: the ignored end-to-end tests and the demo.
+    # The loop against real AppPort runtimes: the ignored end-to-end tests and the closed-loop test.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -34,7 +34,17 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: npm ci --prefix examples/customers-app --no-audit --no-fund
       - run: cargo test -p appport-agent -- --include-ignored
-      - run: scripts/demo.sh
+      # Fails unless every stage refuses or accepts as asserted, including a verified,
+      # accepted change on rkendel1/appport-services after `npx appport init`.
+      - run: scripts/closed-loop-test.sh
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: closed-loop
+          path: |
+            target/closed-loop/*.json
+            target/closed-loop/*.jsonl
+            target/closed-loop/*.txt
 
   appport-drift-pinned:
     runs-on: ubuntu-latest

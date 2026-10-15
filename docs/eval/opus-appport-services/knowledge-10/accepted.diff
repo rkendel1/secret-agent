@@ -1,0 +1,14 @@
+--- a/appport/capabilities/documents.ts
++++ b/appport/capabilities/documents.ts
+@@ -49,7 +49,10 @@
+   handler(input) {
+     const document = documents.get(input.documentId);
+     if (!document) throw errors.notFound(`No such document: ${input.documentId}`);
+-    return document;
++    // Return a fresh copy with exactly the declared fields, so callers can never
++    // mutate the stored record.
++    const { id, title, content, version } = document;
++    return { id, title, content, version };
+   }
+ });
+ 

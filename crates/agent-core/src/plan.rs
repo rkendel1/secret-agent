@@ -251,8 +251,9 @@ pub fn plan(intent: &Intent, contract: &Contract, project: &Project) -> Result<P
 
     // Regression: observations whose answers on existing state must not change.
     let mut regression = Vec::new();
+    let mut considered = BTreeSet::new();
     for c in std::iter::once(&target).chain(contract_dependents.iter()).chain(code_reach.iter()) {
-        if regression.contains(c) {
+        if !considered.insert(c.clone()) {
             continue;
         }
         if is_observation(c) {
@@ -336,6 +337,18 @@ pub fn plan(intent: &Intent, contract: &Contract, project: &Project) -> Result<P
             );
             enumerators.push(id(&entry.name, def.version));
         }
+    }
+    // A change nothing can probe would be accepted on structure alone. Refuse.
+    if regression.is_empty() && flows.is_empty() {
+        return Err(refuse(
+            "contract.unverifiable",
+            format!(
+                "the contract gives no way to verify the behaviour of {key}: its effect is {}, no observation depends on it, \
+and no declared verification method relies on it. Declare `effect: \"observation\"` on the capabilities that only read, \
+or `integration.verify` methods that re-read through {key}",
+                view.effect.map_or("not declared".to_string(), |e| format!("{e:?}").to_lowercase())
+            ),
+        ));
     }
     if enumerators.is_empty() && !regression.is_empty() {
         decide(
@@ -552,6 +565,74 @@ fn short(digest: &str) -> String {
 pub struct ModelTask {
     pub system: String,
     pub prompt: String,
+}
+
+/// How much the model is told. The verifier is the same either way.
+///
+/// `Knowledge` is the agent: the contract slice, the replacement constraints, the
+/// acceptance checks and the graph-selected files. `Bare` is the ablation a
+/// plain chat-completion wrapper would send: the goal and the editable file. It
+/// exists to measure what the knowledge contributes; both are judged by
+/// [`crate::verify::judge`], and both receive the verifier's violations on retry.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, Serialize, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ContextMode {
+    #[default]
+    Knowledge,
+    Bare,
+}
+
+impl std::str::FromStr for ContextMode {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "knowledge" => Ok(ContextMode::Knowledge),
+            "bare" => Ok(ContextMode::Bare),
+            other => Err(format!("unknown context mode {other:?}: use knowledge or bare")),
+        }
+    }
+}
+
+impl fmt::Display for ContextMode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(match self {
+            ContextMode::Knowledge => "knowledge",
+            ContextMode::Bare => "bare",
+        })
+    }
+}
+
+/// The model task for `mode`.
+pub fn task_for(mode: ContextMode, plan: &Plan, files: &BTreeMap<String, String>, feedback: &[String]) -> ModelTask {
+    match mode {
+        ContextMode::Knowledge => model_task(plan, files, feedback),
+        ContextMode::Bare => bare_task(plan, files, feedback),
+    }
+}
+
+/// The ablation: the goal and the editable file, nothing derived from the contract.
+pub fn bare_task(plan: &Plan, files: &BTreeMap<String, String>, feedback: &[String]) -> ModelTask {
+    let system = "You are a coding assistant. Change only the file you are given. Keep its exported symbol and \
+signature. Reply with the complete new contents of each file you change, and nothing else, in this exact form:\n\
+=== FILE: <path> ===\n<entire file contents>\n=== END FILE ==="
+        .to_string();
+    let editable = plan.editable();
+    let mut prompt = format!("# Task\n{}\n", plan.intent.goal);
+    if !feedback.is_empty() {
+        prompt.push_str("\n# The previous attempt was rejected. It violated:\n");
+        for item in feedback {
+            prompt.push_str(&format!("- {item}\n"));
+        }
+        prompt.push_str("Fix every item above.\n");
+    }
+    prompt.push_str("\n# File\n");
+    for path in &editable {
+        if let Some(contents) = files.get(*path) {
+            prompt.push_str(&format!("## {path}\n```\n{}\n```\n", contents.trim_end()));
+        }
+    }
+    prompt.push_str(&format!("\nReply with the new contents of {} only.\n", editable.join(", ")));
+    ModelTask { system, prompt }
 }
 
 /// The fence the model must use for each file it returns.

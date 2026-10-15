@@ -1,0 +1,203 @@
+{
+  "intent": "replace documents.open@1: return a copy of the stored document instead of the live record",
+  "contextMode": "knowledge",
+  "project": "target/closed-loop/services",
+  "application": "com.example.appportservices",
+  "model": "scripted:examples/appport-services/scripted/replace-documents-open",
+  "outcome": "accepted",
+  "baselineFailures": [],
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "scripted/01.txt",
+      "usage": {
+        "input_tokens": 2003,
+        "output_tokens": 1172,
+        "estimated": true
+      },
+      "promptBytes": 8011,
+      "responseBytes": 4687,
+      "filesChanged": [
+        "appport/capabilities/documents.ts"
+      ],
+      "verdict": {
+        "accepted": false,
+        "checks": [
+          {
+            "code": "edit.boundary",
+            "rule": "only the target's implementation module changes",
+            "status": "pass"
+          },
+          {
+            "code": "runtime.load",
+            "rule": "the application loads and answers appport.manifest@1",
+            "status": "pass"
+          },
+          {
+            "code": "contract.identity",
+            "rule": "the published contract is unchanged (contractDigest sha256:1142b61376d9)",
+            "status": "fail",
+            "violations": [
+              "contractDigest changed: sha256:1142b61376d911ba33f12a27291d85997face48288d573655bc992c803bcb0d5 → sha256:1b96028bebac94753d4e211ee45ba30635cf979b0c3b5c9aafc5ef6e8415cf2c",
+              "documents.open@1's contract pin changed: sha256:000b63ee8e76b743d2c00f209c409b6b272229dc6d0a86cb710e3c796be932e7 → sha256:e43ada161b52cd61fe56e7f9c00a69d6cbab42d1081c2300ee1daf8ed2821552"
+            ]
+          },
+          {
+            "code": "contract.valid",
+            "rule": "the published contract has no validation errors",
+            "status": "pass"
+          },
+          {
+            "code": "output.conformance",
+            "rule": "every output observed conforms to its declared output schema",
+            "status": "pass",
+            "notes": [
+              "5 output(s) conform"
+            ]
+          },
+          {
+            "code": "failures.declared",
+            "rule": "documents.open@1 fails only with its declared failure codes (NOT_FOUND)",
+            "status": "pass"
+          },
+          {
+            "code": "behavior.regression",
+            "rule": "answers on existing state are unchanged for documents.open@1, documents.list@1",
+            "status": "fail",
+            "violations": [
+              "documents.open@1 {\"documentId\":\"doc_welcome\"}: was {\"output\":{\"id\":\"doc_welcome\",\"title\":\"Welcome\",\"content\":\"Hello from AppPort\",\"version\":1}}, now {\"output\":{\"id\":\"doc_welcome\",\"title\":\"Welcome\",\"content\":\"Hello from AppPort\",\"version\":1,\"openedAt\":\"2026-10-15T23:09:09.708Z\"}}"
+            ]
+          },
+          {
+            "code": "verification",
+            "rule": "documents.save@1: declared verification (document-saved, changed-event) is not contradicted and every state method confirms",
+            "status": "pass",
+            "notes": [
+              "documents.save@1#document-saved confirmed (establishes)",
+              "documents.save@1#changed-event confirmed (corroborates)"
+            ]
+          }
+        ]
+      },
+      "evidence": [
+        "documents.save@1: verified"
+      ],
+      "rolledBack": true,
+      "durationMs": 188
+    },
+    {
+      "attempt": 2,
+      "model": "scripted/02.txt",
+      "usage": {
+        "input_tokens": 2199,
+        "output_tokens": 1150,
+        "estimated": true
+      },
+      "promptBytes": 8793,
+      "responseBytes": 4597,
+      "filesChanged": [
+        "appport/capabilities/documents.ts"
+      ],
+      "verdict": {
+        "accepted": true,
+        "checks": [
+          {
+            "code": "edit.boundary",
+            "rule": "only the target's implementation module changes",
+            "status": "pass"
+          },
+          {
+            "code": "runtime.load",
+            "rule": "the application loads and answers appport.manifest@1",
+            "status": "pass"
+          },
+          {
+            "code": "contract.identity",
+            "rule": "the published contract is unchanged (contractDigest sha256:1142b61376d9)",
+            "status": "pass",
+            "notes": [
+              "contractDigest sha256:1142b61376d911ba33f12a27291d85997face48288d573655bc992c803bcb0d5"
+            ]
+          },
+          {
+            "code": "contract.valid",
+            "rule": "the published contract has no validation errors",
+            "status": "pass"
+          },
+          {
+            "code": "output.conformance",
+            "rule": "every output observed conforms to its declared output schema",
+            "status": "pass",
+            "notes": [
+              "5 output(s) conform"
+            ]
+          },
+          {
+            "code": "failures.declared",
+            "rule": "documents.open@1 fails only with its declared failure codes (NOT_FOUND)",
+            "status": "pass"
+          },
+          {
+            "code": "behavior.regression",
+            "rule": "answers on existing state are unchanged for documents.open@1, documents.list@1",
+            "status": "pass",
+            "notes": [
+              "3 answer(s) on existing state unchanged"
+            ]
+          },
+          {
+            "code": "verification",
+            "rule": "documents.save@1: declared verification (document-saved, changed-event) is not contradicted and every state method confirms",
+            "status": "pass",
+            "notes": [
+              "documents.save@1#document-saved confirmed (establishes)",
+              "documents.save@1#changed-event confirmed (corroborates)"
+            ]
+          }
+        ]
+      },
+      "evidence": [
+        "documents.save@1: verified"
+      ],
+      "rolledBack": false,
+      "durationMs": 187
+    }
+  ],
+  "totals": {
+    "modelCalls": 2,
+    "inputTokens": 4202,
+    "outputTokens": 2322,
+    "tokensEstimated": true,
+    "rejectedAttempts": 1,
+    "rollbacks": 1,
+    "wallMs": 4208
+  },
+  "deterministic": {
+    "sourceFilesObserved": 131,
+    "capabilitiesInContract": 6,
+    "capabilitiesLocatedInSource": 3,
+    "graphNodes": 9,
+    "graphEdges": 12,
+    "dependentsOfTarget": 1,
+    "replacementConstraints": 8,
+    "acceptanceChecks": 8,
+    "decisions": 12,
+    "permissionsGranted": [
+      "documents.read",
+      "documents.write"
+    ],
+    "applicationRuns": 4,
+    "envelopesExchanged": 28,
+    "verificationMethodsEvaluated": 6,
+    "modelCallsForDiscovery": 0,
+    "modelCallsForVerification": 0
+  },
+  "context": {
+    "filesSent": 1,
+    "projectSourceFiles": 131,
+    "sourceBytesSent": 4391,
+    "projectSourceBytes": 1042104,
+    "knowledgeBytesSent": 918
+  },
+  "startedAt": "2026-10-15T23:09:05.722Z"
+}

@@ -1,0 +1,55 @@
+{
+  "intent": "replace documents.open@1: return a copy of the stored document instead of the live record",
+  "project": "target/closed-loop/services-pristine",
+  "model": "anthropic:claude-opus-5-5 via https://api.anthropic.com/v1/messages",
+  "maxAttempts": 3,
+  "startedAt": "2026-10-15T23:22:21.648Z",
+  "finishedAt": "2026-10-15T23:22:37.697Z",
+  "arms": [
+    {
+      "arm": "knowledge",
+      "trials": 1,
+      "accepted": 1,
+      "acceptedFirstAttempt": 1,
+      "acceptedAfterRetry": 0,
+      "rejected": 0,
+      "errors": 0,
+      "acceptanceRate": 1.0,
+      "firstAttemptRate": 1.0,
+      "meanAttemptsToAccept": 1.0,
+      "modelCalls": 1,
+      "inputTokens": 2904,
+      "outputTokens": 1733,
+      "tokensEstimated": false,
+      "rejectedAttempts": 0,
+      "rollbacks": 0,
+      "unusableResponses": 0,
+      "contractEdits": 0,
+      "boundaryViolations": 0,
+      "modelCallsPerAccepted": 1.0,
+      "tokensPerAccepted": 4637.0,
+      "rejectedBy": {},
+      "meanWallMs": 16032.0
+    }
+  ],
+  "trials": [
+    {
+      "arm": "knowledge",
+      "trial": 1,
+      "outcome": "accepted",
+      "attempts": 1,
+      "modelCalls": 1,
+      "inputTokens": 2904,
+      "outputTokens": 1733,
+      "tokensEstimated": false,
+      "rejectedAttempts": 0,
+      "rollbacks": 0,
+      "unusableResponses": 0,
+      "contractEdits": 0,
+      "boundaryViolations": 0,
+      "rejectedBy": [],
+      "wallMs": 16032,
+      "report": "knowledge-01/report.json"
+    }
+  ]
+}

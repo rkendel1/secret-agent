@@ -24,7 +24,9 @@ out="target/demo"
 app="examples/customers-app"
 intent="replace customers.lookup@1: read customers from the application's customer store instead of the legacy CRM export"
 
+scripted=0
 if [ "$#" -eq 0 ]; then
+  scripted=1
   set -- --provider scripted --responses examples/scripted/replace-customer-lookup
 fi
 
@@ -62,7 +64,8 @@ const r = require(process.argv[1]);
 const t = r.totals, d = r.deterministic, c = r.context;
 console.log(`outcome                        ${r.outcome}`);
 console.log(`model                          ${r.model}`);
-console.log(`model calls                    ${t.modelCalls} (${t.rejectedAttempts} rejected by verification)`);
+console.log(`model calls                    ${t.modelCalls} (${t.rejectedAttempts} rejected by verification, ${t.rollbacks} rolled back)`);
+console.log(`wall-clock time                ${(t.wallMs / 1000).toFixed(1)} s`);
 console.log(`tokens in / out                ${t.inputTokens} / ${t.outputTokens}${t.tokensEstimated ? " (estimated)" : ""}`);
 console.log(`model calls for discovery      ${d.modelCallsForDiscovery}`);
 console.log(`model calls for verification   ${d.modelCallsForVerification}`);
@@ -75,4 +78,8 @@ for (const a of r.attempts) {
   console.log(`attempt ${a.attempt}                      ${a.verdict?.accepted ? "accepted" : "rejected"}${failed.length ? ": " + failed.join(", ") : ""}${a.unusable ? ": " + a.unusable : ""}`);
 }
 ' "$repo/$out/report.json"
+if [ "$status" -eq 0 ] && [ "$scripted" = 1 ]; then
+  # The scripted completions are built to exercise rejection, rollback and retry.
+  node "$repo/scripts/check-report.mjs" "$repo/$out/report.json" --min-rejected 1 --min-rollbacks 1 || status=1
+fi
 exit "$status"
