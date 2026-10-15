@@ -1,0 +1,8 @@
+{
+  "provider": "openai-compatible",
+  "baseUrl": "https://ai-gateway.vercel.sh/v1",
+  "model": "anthropic/claude-opus-5.5",
+  "apiKeyEnv": "AI_GATEWAY_API_KEY",
+  "maxTokens": 16000,
+  "timeoutSecs": 600
+}
