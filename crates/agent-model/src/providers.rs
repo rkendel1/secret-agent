@@ -1,0 +1,285 @@
+use std::io::{Read, Write};
+use std::path::PathBuf;
+use std::process::{Command, Stdio};
+use std::time::Duration;
+
+use serde_json::{json, Value};
+use ureq::Agent;
+
+use crate::{Model, ModelConfig, ModelError, Provider, Request, Response, Usage};
+
+/// Builds the model a configuration describes.
+pub fn connect(config: &ModelConfig) -> Result<Box<dyn Model>, ModelError> {
+    Ok(match config.provider {
+        Provider::OpenAiCompatible => Box::new(OpenAiCompatibleModel::new(config)?),
+        Provider::Anthropic => Box::new(AnthropicModel::new(config)?),
+        Provider::Command => Box::new(CommandModel::new(config)?),
+        Provider::Scripted => Box::new(ScriptedModel::new(config)?),
+    })
+}
+
+fn agent(config: &ModelConfig) -> Agent {
+    Agent::config_builder()
+        .timeout_global(Some(Duration::from_secs(config.timeout_secs)))
+        .http_status_as_error(false)
+        .build()
+        .into()
+}
+
+fn key(config: &ModelConfig, default_env: &str, required: bool) -> Result<Option<String>, ModelError> {
+    let name = config.api_key_env.as_deref().unwrap_or(default_env);
+    match std::env::var(name) {
+        Ok(value) if !value.is_empty() => Ok(Some(value)),
+        _ if required => Err(ModelError::Config(format!("set {name} to the API key"))),
+        _ => Ok(None),
+    }
+}
+
+fn post(agent: &Agent, url: &str, headers: &[(&str, String)], body: &Value) -> Result<Value, ModelError> {
+    let mut request = agent.post(url);
+    for (name, value) in headers {
+        request = request.header(*name, value.as_str());
+    }
+    let mut response = request.send_json(body).map_err(|e| ModelError::Transport(format!("{url}: {e}")))?;
+    let status = response.status().as_u16();
+    let text = response.body_mut().read_to_string().map_err(|e| ModelError::Transport(e.to_string()))?;
+    if !(200..300).contains(&status) {
+        return Err(ModelError::Provider { status, body: text.chars().take(2000).collect() });
+    }
+    serde_json::from_str(&text)
+        .map_err(|e| ModelError::Protocol(format!("not JSON ({e}): {}", text.chars().take(500).collect::<String>())))
+}
+
+fn trim_url(url: &str) -> &str {
+    url.trim_end_matches('/')
+}
+
+/// OpenAI-compatible chat completions: local servers and remote APIs alike.
+pub struct OpenAiCompatibleModel {
+    agent: Agent,
+    url: String,
+    model: String,
+    key: Option<String>,
+    max_tokens: u32,
+    temperature: Option<f64>,
+}
+
+impl OpenAiCompatibleModel {
+    pub fn new(config: &ModelConfig) -> Result<Self, ModelError> {
+        let base = config.base_url.clone().unwrap_or_else(|| "http://localhost:11434/v1".into());
+        Ok(Self {
+            agent: agent(config),
+            url: format!("{}/chat/completions", trim_url(&base)),
+            model: config
+                .model
+                .clone()
+                .ok_or_else(|| ModelError::Config("openai-compatible needs a model name".into()))?,
+            key: key(config, "OPENAI_API_KEY", false)?,
+            max_tokens: config.max_tokens,
+            temperature: config.temperature,
+        })
+    }
+}
+
+impl Model for OpenAiCompatibleModel {
+    fn describe(&self) -> String {
+        format!("openai-compatible:{} via {}", self.model, self.url)
+    }
+
+    fn complete(&mut self, request: &Request) -> Result<Response, ModelError> {
+        let mut body = json!({
+            "model": self.model,
+            "max_tokens": request.max_tokens.min(self.max_tokens),
+            "messages": [
+                { "role": "system", "content": request.system },
+                { "role": "user", "content": request.prompt }
+            ]
+        });
+        if let Some(t) = self.temperature {
+            body["temperature"] = json!(t);
+        }
+        let headers: Vec<(&str, String)> = self.key.iter().map(|k| ("authorization", format!("Bearer {k}"))).collect();
+        let answer = post(&self.agent, &self.url, &headers, &body)?;
+        let text = answer
+            .pointer("/choices/0/message/content")
+            .and_then(Value::as_str)
+            .ok_or_else(|| ModelError::Protocol("no choices[0].message.content".into()))?
+            .to_string();
+        let usage = match (answer.pointer("/usage/prompt_tokens"), answer.pointer("/usage/completion_tokens")) {
+            (Some(i), Some(o)) => Usage {
+                input_tokens: i.as_u64().unwrap_or_default(),
+                output_tokens: o.as_u64().unwrap_or_default(),
+                estimated: false,
+            },
+            _ => Usage::estimate(&format!("{}{}", request.system, request.prompt), &text),
+        };
+        let model = answer.get("model").and_then(Value::as_str).unwrap_or(&self.model).to_string();
+        Ok(Response { text, usage, model })
+    }
+}
+
+/// The Anthropic Messages API.
+pub struct AnthropicModel {
+    agent: Agent,
+    url: String,
+    model: String,
+    key: String,
+    max_tokens: u32,
+    temperature: Option<f64>,
+}
+
+impl AnthropicModel {
+    pub fn new(config: &ModelConfig) -> Result<Self, ModelError> {
+        let base = config.base_url.clone().unwrap_or_else(|| "https://api.anthropic.com".into());
+        Ok(Self {
+            agent: agent(config),
+            url: format!("{}/v1/messages", trim_url(&base)),
+            model: config.model.clone().ok_or_else(|| ModelError::Config("anthropic needs a model name".into()))?,
+            key: key(config, "ANTHROPIC_API_KEY", true)?.unwrap_or_default(),
+            max_tokens: config.max_tokens,
+            temperature: config.temperature,
+        })
+    }
+}
+
+impl Model for AnthropicModel {
+    fn describe(&self) -> String {
+        format!("anthropic:{} via {}", self.model, self.url)
+    }
+
+    fn complete(&mut self, request: &Request) -> Result<Response, ModelError> {
+        let mut body = json!({
+            "model": self.model,
+            "max_tokens": request.max_tokens.min(self.max_tokens),
+            "system": request.system,
+            "messages": [{ "role": "user", "content": request.prompt }]
+        });
+        if let Some(t) = self.temperature {
+            body["temperature"] = json!(t);
+        }
+        let headers = [("x-api-key", self.key.clone()), ("anthropic-version", "2023-06-01".to_string())];
+        let answer = post(&self.agent, &self.url, &headers, &body)?;
+        let text: String = answer
+            .get("content")
+            .and_then(Value::as_array)
+            .ok_or_else(|| ModelError::Protocol("no content blocks".into()))?
+            .iter()
+            .filter(|b| b.get("type").and_then(Value::as_str) == Some("text"))
+            .filter_map(|b| b.get("text").and_then(Value::as_str))
+            .collect();
+        let usage = Usage {
+            input_tokens: answer.pointer("/usage/input_tokens").and_then(Value::as_u64).unwrap_or_default(),
+            output_tokens: answer.pointer("/usage/output_tokens").and_then(Value::as_u64).unwrap_or_default(),
+            estimated: answer.get("usage").is_none(),
+        };
+        let model = answer.get("model").and_then(Value::as_str).unwrap_or(&self.model).to_string();
+        Ok(Response { text, usage, model })
+    }
+}
+
+/// A local program: the system and user prompts on stdin, the completion on stdout.
+pub struct CommandModel {
+    command: Vec<String>,
+    timeout: Duration,
+}
+
+impl CommandModel {
+    pub fn new(config: &ModelConfig) -> Result<Self, ModelError> {
+        if config.command.is_empty() {
+            return Err(ModelError::Config("command needs a program to run".into()));
+        }
+        Ok(Self { command: config.command.clone(), timeout: Duration::from_secs(config.timeout_secs) })
+    }
+}
+
+impl Model for CommandModel {
+    fn describe(&self) -> String {
+        format!("command:{}", self.command[0])
+    }
+
+    fn complete(&mut self, request: &Request) -> Result<Response, ModelError> {
+        let mut child = Command::new(&self.command[0])
+            .args(&self.command[1..])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::inherit())
+            .spawn()
+            .map_err(|e| ModelError::Transport(format!("{}: {e}", self.command[0])))?;
+        let input = format!("{}\n\n{}", request.system, request.prompt);
+        let mut stdin = child.stdin.take().expect("piped");
+        let writer = std::thread::spawn(move || stdin.write_all(input.as_bytes()));
+        let mut stdout = child.stdout.take().expect("piped");
+        let reader = std::thread::spawn(move || {
+            let mut text = String::new();
+            stdout.read_to_string(&mut text).map(|_| text)
+        });
+        let deadline = std::time::Instant::now() + self.timeout;
+        let status = loop {
+            if let Some(status) = child.try_wait().map_err(|e| ModelError::Transport(e.to_string()))? {
+                break status;
+            }
+            if std::time::Instant::now() > deadline {
+                let _ = child.kill();
+                return Err(ModelError::Transport(format!("{} timed out", self.command[0])));
+            }
+            std::thread::sleep(Duration::from_millis(20));
+        };
+        let _ = writer.join();
+        let text = reader
+            .join()
+            .map_err(|_| ModelError::Transport("reader panicked".into()))?
+            .map_err(|e| ModelError::Transport(e.to_string()))?;
+        if !status.success() {
+            return Err(ModelError::Transport(format!("{} exited with {status}", self.command[0])));
+        }
+        let usage = Usage::estimate(&format!("{}{}", request.system, request.prompt), &text);
+        Ok(Response { text, usage, model: self.command[0].clone() })
+    }
+}
+
+/// Replays pre-written completions (`01.txt`, `02.txt`, …) in order.
+///
+/// Not a model: it makes the loop reproducible without one, so the deterministic
+/// core can be demonstrated and tested, including how it rejects a bad change.
+pub struct ScriptedModel {
+    files: Vec<PathBuf>,
+    next: usize,
+    dir: PathBuf,
+}
+
+impl ScriptedModel {
+    pub fn new(config: &ModelConfig) -> Result<Self, ModelError> {
+        let dir = config
+            .responses
+            .clone()
+            .ok_or_else(|| ModelError::Config("scripted needs a responses directory".into()))?;
+        let mut files: Vec<PathBuf> = std::fs::read_dir(&dir)
+            .map_err(|e| ModelError::Config(format!("{}: {e}", dir.display())))?
+            .filter_map(|e| e.ok().map(|e| e.path()))
+            .filter(|p| p.extension().is_some_and(|e| e == "txt"))
+            .collect();
+        files.sort();
+        if files.is_empty() {
+            return Err(ModelError::Config(format!("{} holds no .txt completions", dir.display())));
+        }
+        Ok(Self { files, next: 0, dir })
+    }
+}
+
+impl Model for ScriptedModel {
+    fn describe(&self) -> String {
+        format!("scripted:{}", self.dir.display())
+    }
+
+    fn complete(&mut self, request: &Request) -> Result<Response, ModelError> {
+        let path = self.files.get(self.next).ok_or_else(|| {
+            ModelError::Transport(format!("scripted completions exhausted after {}", self.files.len()))
+        })?;
+        self.next += 1;
+        let text =
+            std::fs::read_to_string(path).map_err(|e| ModelError::Transport(format!("{}: {e}", path.display())))?;
+        let usage = Usage::estimate(&format!("{}{}", request.system, request.prompt), &text);
+        let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+        Ok(Response { text, usage, model: format!("scripted/{name}") })
+    }
+}

@@ -1,0 +1,16 @@
+=== FILE: src/handlers/customers.lookup.mjs ===
+import { errors } from "@appport/protocol";
+import { getCustomer } from "../store.mjs";
+
+// Reads the customer from the application's store, the system of record for
+// urn:example:customers:customer, so customers registered since the last legacy
+// export are found too.
+export async function lookupCustomer(input) {
+  const customer = getCustomer(input.customerId);
+  if (!customer) {
+    throw errors.notFound(`no customer ${input.customerId}`);
+  }
+  const { customerId, name, email, tier, since } = customer;
+  return { customerId, name, email, tier, since };
+}
+=== END FILE ===

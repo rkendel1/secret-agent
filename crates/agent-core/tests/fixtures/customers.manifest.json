@@ -1,0 +1,1094 @@
+{
+  "protocol": "appport/1",
+  "application": {
+    "id": "com.example.customers",
+    "name": "Customers",
+    "version": "1.0.0",
+    "description": "Customer records for the PR 2 agent demo."
+  },
+  "capabilities": [
+    {
+      "name": "appport.manifest",
+      "versions": [
+        1
+      ],
+      "latestVersion": 1,
+      "description": "Returns the application manifest for this deployment.",
+      "kind": "request",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "protocol": {
+            "type": "string"
+          },
+          "application": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "version": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": true,
+            "required": [
+              "id",
+              "name",
+              "version"
+            ]
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          },
+          "transports": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "protocol",
+          "application",
+          "capabilities",
+          "events",
+          "transports"
+        ],
+        "title": "AppPortManifest"
+      },
+      "authorization": [],
+      "authorizationContract": {
+        "required": false,
+        "public": true
+      },
+      "authorizationVersion": 1,
+      "idempotency": "unsupported",
+      "concurrency": {
+        "mode": "parallel"
+      },
+      "definitions": [
+        {
+          "version": 1,
+          "description": "Returns the application manifest for this deployment.",
+          "kind": "request",
+          "inputSchema": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false
+          },
+          "outputSchema": {
+            "type": "object",
+            "properties": {
+              "protocol": {
+                "type": "string"
+              },
+              "application": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "version": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": true,
+                "required": [
+                  "id",
+                  "name",
+                  "version"
+                ]
+              },
+              "capabilities": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              },
+              "events": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              },
+              "transports": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "additionalProperties": true,
+            "required": [
+              "protocol",
+              "application",
+              "capabilities",
+              "events",
+              "transports"
+            ],
+            "title": "AppPortManifest"
+          },
+          "authorization": [],
+          "authorizationContract": {
+            "required": false,
+            "public": true
+          },
+          "authorizationVersion": 1,
+          "idempotency": "unsupported",
+          "concurrency": {
+            "mode": "parallel"
+          }
+        }
+      ]
+    },
+    {
+      "name": "appport.ping",
+      "versions": [
+        1
+      ],
+      "latestVersion": 1,
+      "description": "Liveness probe. Returns the server time.",
+      "kind": "request",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "description": "ISO-8601 timestamp",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "timestamp"
+        ]
+      },
+      "authorization": [],
+      "authorizationContract": {
+        "required": false,
+        "public": true
+      },
+      "authorizationVersion": 1,
+      "idempotency": "unsupported",
+      "concurrency": {
+        "mode": "parallel"
+      },
+      "definitions": [
+        {
+          "version": 1,
+          "description": "Liveness probe. Returns the server time.",
+          "kind": "request",
+          "inputSchema": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false
+          },
+          "outputSchema": {
+            "type": "object",
+            "properties": {
+              "timestamp": {
+                "type": "string",
+                "description": "ISO-8601 timestamp",
+                "format": "date-time"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "timestamp"
+            ]
+          },
+          "authorization": [],
+          "authorizationContract": {
+            "required": false,
+            "public": true
+          },
+          "authorizationVersion": 1,
+          "idempotency": "unsupported",
+          "concurrency": {
+            "mode": "parallel"
+          }
+        }
+      ]
+    },
+    {
+      "name": "billing.contact",
+      "versions": [
+        1
+      ],
+      "latestVersion": 1,
+      "description": "Who to send a customer's invoices to.",
+      "kind": "request",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "customerId": {
+            "type": "string",
+            "minLength": 1,
+            "x-appport-concept": "https://schema.example.com/crm/Customer"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "customerId"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "customerId": {
+            "type": "string",
+            "minLength": 1,
+            "x-appport-concept": "https://schema.example.com/crm/Customer"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "x-appport-concept": "https://schema.example.com/crm/Email"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "customerId",
+          "name",
+          "email"
+        ]
+      },
+      "authorization": [
+        "customers.read"
+      ],
+      "effect": "observation",
+      "authorizationContract": {
+        "required": true,
+        "scopes": [
+          "customers.read"
+        ]
+      },
+      "authorizationVersion": 1,
+      "idempotency": "supported",
+      "concurrency": {
+        "mode": "parallel"
+      },
+      "definitions": [
+        {
+          "version": 1,
+          "description": "Who to send a customer's invoices to.",
+          "kind": "request",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "customerId": {
+                "type": "string",
+                "minLength": 1,
+                "x-appport-concept": "https://schema.example.com/crm/Customer"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "customerId"
+            ]
+          },
+          "outputSchema": {
+            "type": "object",
+            "properties": {
+              "customerId": {
+                "type": "string",
+                "minLength": 1,
+                "x-appport-concept": "https://schema.example.com/crm/Customer"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "email": {
+                "type": "string",
+                "format": "email",
+                "x-appport-concept": "https://schema.example.com/crm/Email"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "customerId",
+              "name",
+              "email"
+            ]
+          },
+          "authorization": [
+            "customers.read"
+          ],
+          "effect": "observation",
+          "authorizationContract": {
+            "required": true,
+            "scopes": [
+              "customers.read"
+            ]
+          },
+          "authorizationVersion": 1,
+          "idempotency": "supported",
+          "concurrency": {
+            "mode": "parallel"
+          }
+        }
+      ]
+    },
+    {
+      "name": "customers.list",
+      "versions": [
+        1
+      ],
+      "latestVersion": 1,
+      "description": "Lists every customer.",
+      "kind": "request",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "customers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "customerId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "x-appport-concept": "https://schema.example.com/crm/Customer"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "customerId",
+                "name"
+              ]
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "customers"
+        ]
+      },
+      "authorization": [
+        "customers.read"
+      ],
+      "effect": "observation",
+      "authorizationContract": {
+        "required": true,
+        "scopes": [
+          "customers.read"
+        ]
+      },
+      "authorizationVersion": 1,
+      "idempotency": "supported",
+      "concurrency": {
+        "mode": "parallel"
+      },
+      "definitions": [
+        {
+          "version": 1,
+          "description": "Lists every customer.",
+          "kind": "request",
+          "inputSchema": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false
+          },
+          "outputSchema": {
+            "type": "object",
+            "properties": {
+              "customers": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "customerId": {
+                      "type": "string",
+                      "minLength": 1,
+                      "x-appport-concept": "https://schema.example.com/crm/Customer"
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "customerId",
+                    "name"
+                  ]
+                }
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "customers"
+            ]
+          },
+          "authorization": [
+            "customers.read"
+          ],
+          "effect": "observation",
+          "authorizationContract": {
+            "required": true,
+            "scopes": [
+              "customers.read"
+            ]
+          },
+          "authorizationVersion": 1,
+          "idempotency": "supported",
+          "concurrency": {
+            "mode": "parallel"
+          }
+        }
+      ]
+    },
+    {
+      "name": "customers.lookup",
+      "versions": [
+        1
+      ],
+      "latestVersion": 1,
+      "description": "Reads one customer.",
+      "kind": "request",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "customerId": {
+            "type": "string",
+            "minLength": 1,
+            "x-appport-concept": "https://schema.example.com/crm/Customer"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "customerId"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "customerId": {
+            "type": "string",
+            "minLength": 1,
+            "x-appport-concept": "https://schema.example.com/crm/Customer"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "x-appport-concept": "https://schema.example.com/crm/Email"
+          },
+          "tier": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "gold",
+              "platinum"
+            ],
+            "x-appport-concept": "https://schema.example.com/crm/Tier",
+            "x-appport-enum-concepts": {
+              "standard": "https://schema.example.com/crm/Tier#standard",
+              "gold": "https://schema.example.com/crm/Tier#gold",
+              "platinum": "https://schema.example.com/crm/Tier#platinum"
+            }
+          },
+          "since": {
+            "type": "string",
+            "description": "ISO-8601 timestamp",
+            "format": "date-time",
+            "x-appport-concept": "https://schema.example.com/crm/customerSince",
+            "x-appport-encoding": "iso8601"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "customerId",
+          "name",
+          "email",
+          "tier",
+          "since"
+        ]
+      },
+      "authorization": [
+        "customers.read"
+      ],
+      "effect": "observation",
+      "authorizationContract": {
+        "required": true,
+        "scopes": [
+          "customers.read"
+        ]
+      },
+      "authorizationVersion": 1,
+      "idempotency": "supported",
+      "concurrency": {
+        "mode": "parallel"
+      },
+      "definitions": [
+        {
+          "version": 1,
+          "description": "Reads one customer.",
+          "kind": "request",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "customerId": {
+                "type": "string",
+                "minLength": 1,
+                "x-appport-concept": "https://schema.example.com/crm/Customer"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "customerId"
+            ]
+          },
+          "outputSchema": {
+            "type": "object",
+            "properties": {
+              "customerId": {
+                "type": "string",
+                "minLength": 1,
+                "x-appport-concept": "https://schema.example.com/crm/Customer"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "email": {
+                "type": "string",
+                "format": "email",
+                "x-appport-concept": "https://schema.example.com/crm/Email"
+              },
+              "tier": {
+                "type": "string",
+                "enum": [
+                  "standard",
+                  "gold",
+                  "platinum"
+                ],
+                "x-appport-concept": "https://schema.example.com/crm/Tier",
+                "x-appport-enum-concepts": {
+                  "standard": "https://schema.example.com/crm/Tier#standard",
+                  "gold": "https://schema.example.com/crm/Tier#gold",
+                  "platinum": "https://schema.example.com/crm/Tier#platinum"
+                }
+              },
+              "since": {
+                "type": "string",
+                "description": "ISO-8601 timestamp",
+                "format": "date-time",
+                "x-appport-concept": "https://schema.example.com/crm/customerSince",
+                "x-appport-encoding": "iso8601"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "customerId",
+              "name",
+              "email",
+              "tier",
+              "since"
+            ]
+          },
+          "authorization": [
+            "customers.read"
+          ],
+          "effect": "observation",
+          "authorizationContract": {
+            "required": true,
+            "scopes": [
+              "customers.read"
+            ]
+          },
+          "authorizationVersion": 1,
+          "idempotency": "supported",
+          "concurrency": {
+            "mode": "parallel"
+          }
+        }
+      ]
+    },
+    {
+      "name": "customers.register",
+      "versions": [
+        1
+      ],
+      "latestVersion": 1,
+      "description": "Registers a new customer.",
+      "kind": "request",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "x-appport-concept": "https://schema.example.com/crm/Email"
+          },
+          "tier": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "gold",
+              "platinum"
+            ],
+            "x-appport-concept": "https://schema.example.com/crm/Tier",
+            "x-appport-enum-concepts": {
+              "standard": "https://schema.example.com/crm/Tier#standard",
+              "gold": "https://schema.example.com/crm/Tier#gold",
+              "platinum": "https://schema.example.com/crm/Tier#platinum"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "email",
+          "tier"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "customerId": {
+            "type": "string",
+            "minLength": 1,
+            "x-appport-concept": "https://schema.example.com/crm/Customer"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "x-appport-concept": "https://schema.example.com/crm/Email"
+          },
+          "tier": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "gold",
+              "platinum"
+            ],
+            "x-appport-concept": "https://schema.example.com/crm/Tier",
+            "x-appport-enum-concepts": {
+              "standard": "https://schema.example.com/crm/Tier#standard",
+              "gold": "https://schema.example.com/crm/Tier#gold",
+              "platinum": "https://schema.example.com/crm/Tier#platinum"
+            }
+          },
+          "since": {
+            "type": "string",
+            "description": "ISO-8601 timestamp",
+            "format": "date-time",
+            "x-appport-concept": "https://schema.example.com/crm/customerSince",
+            "x-appport-encoding": "iso8601"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "customerId",
+          "name",
+          "email",
+          "tier",
+          "since"
+        ]
+      },
+      "authorization": [
+        "customers.write"
+      ],
+      "effect": "consequential",
+      "authorizationContract": {
+        "required": true,
+        "scopes": [
+          "customers.write"
+        ]
+      },
+      "authorizationVersion": 1,
+      "idempotency": "unsupported",
+      "concurrency": {
+        "mode": "parallel"
+      },
+      "definitions": [
+        {
+          "version": 1,
+          "description": "Registers a new customer.",
+          "kind": "request",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "email": {
+                "type": "string",
+                "format": "email",
+                "x-appport-concept": "https://schema.example.com/crm/Email"
+              },
+              "tier": {
+                "type": "string",
+                "enum": [
+                  "standard",
+                  "gold",
+                  "platinum"
+                ],
+                "x-appport-concept": "https://schema.example.com/crm/Tier",
+                "x-appport-enum-concepts": {
+                  "standard": "https://schema.example.com/crm/Tier#standard",
+                  "gold": "https://schema.example.com/crm/Tier#gold",
+                  "platinum": "https://schema.example.com/crm/Tier#platinum"
+                }
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "email",
+              "tier"
+            ]
+          },
+          "outputSchema": {
+            "type": "object",
+            "properties": {
+              "customerId": {
+                "type": "string",
+                "minLength": 1,
+                "x-appport-concept": "https://schema.example.com/crm/Customer"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "email": {
+                "type": "string",
+                "format": "email",
+                "x-appport-concept": "https://schema.example.com/crm/Email"
+              },
+              "tier": {
+                "type": "string",
+                "enum": [
+                  "standard",
+                  "gold",
+                  "platinum"
+                ],
+                "x-appport-concept": "https://schema.example.com/crm/Tier",
+                "x-appport-enum-concepts": {
+                  "standard": "https://schema.example.com/crm/Tier#standard",
+                  "gold": "https://schema.example.com/crm/Tier#gold",
+                  "platinum": "https://schema.example.com/crm/Tier#platinum"
+                }
+              },
+              "since": {
+                "type": "string",
+                "description": "ISO-8601 timestamp",
+                "format": "date-time",
+                "x-appport-concept": "https://schema.example.com/crm/customerSince",
+                "x-appport-encoding": "iso8601"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "customerId",
+              "name",
+              "email",
+              "tier",
+              "since"
+            ]
+          },
+          "authorization": [
+            "customers.write"
+          ],
+          "effect": "consequential",
+          "authorizationContract": {
+            "required": true,
+            "scopes": [
+              "customers.write"
+            ]
+          },
+          "authorizationVersion": 1,
+          "idempotency": "unsupported",
+          "concurrency": {
+            "mode": "parallel"
+          },
+          "emits": [
+            "customers.registered"
+          ]
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "customers.registered",
+      "versions": [
+        1
+      ],
+      "latestVersion": 1,
+      "description": "A customer was registered.",
+      "payloadSchema": {
+        "type": "object",
+        "properties": {
+          "customerId": {
+            "type": "string",
+            "minLength": 1,
+            "x-appport-concept": "https://schema.example.com/crm/Customer"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "x-appport-concept": "https://schema.example.com/crm/Email"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "customerId",
+          "email"
+        ]
+      },
+      "authorization": [
+        "customers.read"
+      ],
+      "definitions": [
+        {
+          "version": 1,
+          "description": "A customer was registered.",
+          "payloadSchema": {
+            "type": "object",
+            "properties": {
+              "customerId": {
+                "type": "string",
+                "minLength": 1,
+                "x-appport-concept": "https://schema.example.com/crm/Customer"
+              },
+              "email": {
+                "type": "string",
+                "format": "email",
+                "x-appport-concept": "https://schema.example.com/crm/Email"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "customerId",
+              "email"
+            ]
+          },
+          "authorization": [
+            "customers.read"
+          ]
+        }
+      ]
+    }
+  ],
+  "transports": [
+    {
+      "kind": "ipc"
+    }
+  ],
+  "conformance": 2,
+  "extensions": [
+    "appport.integration/1"
+  ],
+  "attributes": {
+    "appport.integration/1": {
+      "capabilities": {
+        "billing.contact@1": {
+          "requires": [
+            {
+              "id": "customer",
+              "relationship": "observes",
+              "target": {
+                "capability": "customers.lookup@1"
+              },
+              "required": true
+            }
+          ],
+          "coverage": {
+            "requires": "complete",
+            "failures": "complete"
+          },
+          "failures": [
+            {
+              "code": "NOT_FOUND",
+              "retry": "safe",
+              "effect": "none"
+            }
+          ]
+        },
+        "customers.list@1": {
+          "authority": "https://schema.example.com/authority/crm",
+          "access": [
+            {
+              "resource": "urn:example:customers:customer",
+              "mode": "reads"
+            }
+          ],
+          "coverage": {
+            "requires": "complete",
+            "access": "complete"
+          }
+        },
+        "customers.lookup@1": {
+          "purpose": "Look up the current state of a customer.",
+          "authority": "https://schema.example.com/authority/crm",
+          "access": [
+            {
+              "resource": "urn:example:customers:customer",
+              "mode": "reads"
+            }
+          ],
+          "coverage": {
+            "requires": "complete",
+            "access": "complete",
+            "failures": "complete"
+          },
+          "failures": [
+            {
+              "code": "NOT_FOUND",
+              "retry": "safe",
+              "effect": "none",
+              "description": "No such customer."
+            }
+          ]
+        },
+        "customers.register@1": {
+          "purpose": "Create a customer record.",
+          "authority": "https://schema.example.com/authority/crm",
+          "effects": [
+            {
+              "type": "https://schema.example.com/effects/customer-created"
+            }
+          ],
+          "verify": [
+            {
+              "id": "customer-readable",
+              "kind": "state",
+              "via": {
+                "capability": "customers.lookup",
+                "version": 1,
+                "input": {
+                  "customerId": {
+                    "$output": "/customerId"
+                  }
+                }
+              },
+              "expect": [
+                {
+                  "at": "/email",
+                  "equals": {
+                    "$input": "/email"
+                  }
+                },
+                {
+                  "at": "/tier",
+                  "equals": {
+                    "$input": "/tier"
+                  }
+                },
+                {
+                  "at": "/since",
+                  "exists": true
+                }
+              ]
+            },
+            {
+              "id": "registered-event",
+              "kind": "event",
+              "event": "customers.registered",
+              "match": {
+                "/customerId": {
+                  "$output": "/customerId"
+                }
+              },
+              "strength": "corroborating"
+            }
+          ],
+          "access": [
+            {
+              "resource": "urn:example:customers:customer",
+              "mode": "changes",
+              "operations": [
+                "create"
+              ]
+            }
+          ],
+          "coverage": {
+            "access": "complete",
+            "failures": "complete"
+          },
+          "approval": {
+            "required": false
+          },
+          "failures": [
+            {
+              "code": "CONFLICT",
+              "retry": "unsafe",
+              "effect": "none",
+              "description": "The email is already registered."
+            }
+          ]
+        }
+      },
+      "resources": [
+        {
+          "id": "urn:example:customers:customer",
+          "kind": "entity",
+          "concept": "https://schema.example.com/crm/Customer",
+          "owner": "self",
+          "description": "A customer record."
+        }
+      ]
+    }
+  }
+}

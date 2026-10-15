@@ -1,0 +1,6 @@
+{
+  "provider": "openai-compatible",
+  "baseUrl": "https://api.openai.com/v1",
+  "model": "gpt-5",
+  "apiKeyEnv": "OPENAI_API_KEY"
+}

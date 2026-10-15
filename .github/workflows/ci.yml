@@ -22,6 +22,20 @@ jobs:
       - run: cargo clippy --all-targets -- -D warnings
       - run: cargo test --all
 
+  agent-e2e:
+    # The loop against a real AppPort runtime: the ignored end-to-end tests and the demo.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: npm ci --prefix examples/customers-app --no-audit --no-fund
+      - run: cargo test -p appport-agent -- --include-ignored
+      - run: scripts/demo.sh
+
   appport-drift-pinned:
     runs-on: ubuntu-latest
     steps:

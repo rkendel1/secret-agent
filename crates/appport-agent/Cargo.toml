@@ -1,0 +1,17 @@
+[package]
+name = "appport-agent"
+version = "0.1.0"
+description = "The autonomous loop: observe an AppPort project, plan a bounded change, ask a model only for the implementation, verify the result by running the application."
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "appport-agent"
+path = "src/main.rs"
+
+[dependencies]
+agent-core = { path = "../agent-core" }
+agent-model = { path = "../agent-model" }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = { version = "1.0.154", features = ["preserve_order"] }

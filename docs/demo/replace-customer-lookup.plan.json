@@ -1,0 +1,387 @@
+{
+  "intent": {
+    "capability": "customers.lookup",
+    "version": 1,
+    "goal": "read customers from the application's customer store instead of the legacy CRM export"
+  },
+  "application": "com.example.customers",
+  "target": {
+    "name": "customers.lookup",
+    "version": 1
+  },
+  "contract_digest": "sha256:4f6660b5135b0053debb5f16c4ce458cae6d62832a841672483b69e880c997ca",
+  "view": {
+    "capability": "customers.lookup@1",
+    "kind": "request",
+    "description": "Reads one customer.",
+    "purpose": "Look up the current state of a customer.",
+    "authority": "https://schema.example.com/authority/crm",
+    "effect": "observation",
+    "authorization": [
+      "customers.read"
+    ],
+    "idempotency": "supported",
+    "concurrency": {
+      "mode": "parallel"
+    },
+    "inputs": [
+      {
+        "pointer": "/customerId",
+        "types": [
+          "string"
+        ],
+        "required": true,
+        "concept": "https://schema.example.com/crm/Customer"
+      }
+    ],
+    "outputs": [
+      {
+        "pointer": "/customerId",
+        "types": [
+          "string"
+        ],
+        "required": true,
+        "concept": "https://schema.example.com/crm/Customer"
+      },
+      {
+        "pointer": "/name",
+        "types": [
+          "string"
+        ],
+        "required": true
+      },
+      {
+        "pointer": "/email",
+        "types": [
+          "string"
+        ],
+        "required": true,
+        "format": "email",
+        "concept": "https://schema.example.com/crm/Email"
+      },
+      {
+        "pointer": "/tier",
+        "types": [
+          "string"
+        ],
+        "required": true,
+        "enum": [
+          "standard",
+          "gold",
+          "platinum"
+        ],
+        "concept": "https://schema.example.com/crm/Tier"
+      },
+      {
+        "pointer": "/since",
+        "types": [
+          "string"
+        ],
+        "required": true,
+        "description": "ISO-8601 timestamp",
+        "format": "date-time",
+        "concept": "https://schema.example.com/crm/customerSince",
+        "encoding": "iso8601"
+      }
+    ],
+    "evidence": {
+      "methods": [],
+      "establishable": false
+    },
+    "failures": [
+      {
+        "code": "NOT_FOUND",
+        "retry": "safe",
+        "effect": "none",
+        "description": "No such customer."
+      }
+    ],
+    "access": [
+      {
+        "resource": "urn:example:customers:customer",
+        "mode": "reads"
+      }
+    ],
+    "unknowns": [
+      "approval",
+      "coverage.preconditions"
+    ]
+  },
+  "boundary": {
+    "capability": {
+      "name": "customers.lookup",
+      "version": 1
+    },
+    "contractPin": "sha256:f6de9ab361ca297397f6a44faa2cc81c5a139bf090e3d0233cb21107dd083e6c",
+    "constraints": [
+      {
+        "code": "identity",
+        "rule": "serve customers.lookup@1 under the same name and version"
+      },
+      {
+        "code": "kind",
+        "rule": "remain a request capability"
+      },
+      {
+        "code": "input.accept-no-less",
+        "rule": "accept every input the current input schema accepts: add no required field, remove no field, change no field type, narrow no enum, bound or pattern"
+      },
+      {
+        "code": "output.return-no-more",
+        "rule": "return only what the current output schema allows: remove no field consumers receive, change no field type, widen no enum or bound"
+      },
+      {
+        "code": "semantics.identifiers",
+        "rule": "keep every x-appport-* annotation on existing fields unchanged; new annotations are allowed"
+      },
+      {
+        "code": "effect",
+        "rule": "keep the declared effect `observation`"
+      },
+      {
+        "code": "idempotency",
+        "rule": "keep idempotency `supported`"
+      },
+      {
+        "code": "authorization.no-tightening",
+        "rule": "require no permission beyond customers.read"
+      },
+      {
+        "code": "integration.authority",
+        "rule": "keep the authority `https://schema.example.com/authority/crm`"
+      }
+    ],
+    "dependents": [
+      {
+        "node": "capability:com.example.customers/billing.contact@1",
+        "relationship": "observes",
+        "required": true,
+        "via": "customer"
+      },
+      {
+        "node": "capability:com.example.customers/customers.register@1",
+        "relationship": "verified-by",
+        "via": "customer-readable"
+      }
+    ],
+    "reaches": [
+      {
+        "node": "resource:urn:example:customers:customer",
+        "relationship": "reads"
+      }
+    ],
+    "verification": [],
+    "handover": [
+      {
+        "id": "distinct-provider",
+        "rule": "the replacement is a different provider, under its own id",
+        "rejection": "same-provider"
+      },
+      {
+        "id": "source-active",
+        "rule": "the source provider is ACTIVE and is the exact expected registration",
+        "rejection": "from-not-active"
+      },
+      {
+        "id": "target-registered",
+        "rule": "the replacement is REGISTERED (not promoted) and is the exact expected registration",
+        "rejection": "to-not-registered"
+      },
+      {
+        "id": "provides-capability",
+        "rule": "the replacement provides the capability version",
+        "rejection": "capability-not-provided"
+      },
+      {
+        "id": "contract-match",
+        "rule": "the replacement's contract for the capability matches the source's",
+        "rejection": "contract-mismatch"
+      },
+      {
+        "id": "validated",
+        "rule": "the replacement's pending revision has a passing validation for its exact fingerprint",
+        "rejection": "to-not-validated"
+      },
+      {
+        "id": "promotion-checks",
+        "rule": "the gateway's promotion checks pass for the replacement now",
+        "rejection": "promotion-checks-failed"
+      },
+      {
+        "id": "consumer-grants",
+        "rule": "every consumer granted the capability from the source holds its own current grant for the replacement; no grant is copied",
+        "rejection": "replacement-not-authorized"
+      }
+    ]
+  },
+  "context": [
+    {
+      "path": "src/handlers/customers.lookup.mjs",
+      "editable": true,
+      "reason": "implements customers.lookup@1"
+    },
+    {
+      "path": "src/legacy/crm.mjs",
+      "editable": false,
+      "reason": "imported by the current implementation (src/handlers/customers.lookup.mjs)"
+    },
+    {
+      "path": "src/handlers/customers.register.mjs",
+      "editable": false,
+      "reason": "customers.register@1 changes resource:urn:example:customers:customer, which the target reads"
+    },
+    {
+      "path": "src/store.mjs",
+      "editable": false,
+      "reason": "imported by src/handlers/customers.register.mjs"
+    },
+    {
+      "path": "src/handlers/customers.list.mjs",
+      "editable": false,
+      "reason": "customers.list@1 reads resource:urn:example:customers:customer, which the target reads"
+    }
+  ],
+  "permissions": [
+    "customers.read",
+    "customers.write"
+  ],
+  "probes": {
+    "enumerators": [
+      {
+        "name": "customers.list",
+        "version": 1
+      }
+    ],
+    "regression": [
+      {
+        "name": "customers.lookup",
+        "version": 1
+      },
+      {
+        "name": "billing.contact",
+        "version": 1
+      }
+    ],
+    "flows": [
+      {
+        "capability": {
+          "name": "customers.register",
+          "version": 1
+        },
+        "methods": [
+          "customer-readable",
+          "registered-event"
+        ],
+        "reason": "its declared state verification re-reads through the target"
+      }
+    ]
+  },
+  "checks": [
+    {
+      "code": "edit.boundary",
+      "rule": "only the target's implementation module changes",
+      "source": "plan"
+    },
+    {
+      "code": "runtime.load",
+      "rule": "the application loads and answers appport.manifest@1",
+      "source": "AppPort runtime"
+    },
+    {
+      "code": "contract.identity",
+      "rule": "the published contract is unchanged (contractDigest sha256:4f6660b5135b)",
+      "source": "contractDigest; ReplacementBoundary.contract_pin"
+    },
+    {
+      "code": "contract.valid",
+      "rule": "the published contract has no validation errors",
+      "source": "Contract::validate"
+    },
+    {
+      "code": "output.conformance",
+      "rule": "every output observed conforms to its declared output schema",
+      "source": "outputSchema"
+    },
+    {
+      "code": "failures.declared",
+      "rule": "customers.lookup@1 fails only with its declared failure codes (NOT_FOUND)",
+      "source": "integration.failures"
+    },
+    {
+      "code": "behavior.regression",
+      "rule": "answers on existing state are unchanged for customers.lookup@1, billing.contact@1",
+      "source": "baseline observation"
+    },
+    {
+      "code": "verification",
+      "rule": "customers.register@1: declared verification (customer-readable, registered-event) is not contradicted and every state method confirms",
+      "source": "integration.verify",
+      "subject": {
+        "name": "customers.register",
+        "version": 1
+      }
+    }
+  ],
+  "decisions": [
+    {
+      "step": "contract",
+      "fact": "observed contract of com.example.customers is structurally valid"
+    },
+    {
+      "step": "target",
+      "fact": "customers.lookup@1: effect observation, 1 input field(s), 5 output field(s), 1 declared failure(s), 9 replacement constraint(s)"
+    },
+    {
+      "step": "source",
+      "fact": "customers.lookup@1 is declared in src/contract.mjs:82 and implemented in src/handlers/customers.lookup.mjs#lookupCustomer"
+    },
+    {
+      "step": "graph",
+      "fact": "capability:com.example.customers/billing.contact@1 --observes--> customers.lookup@1"
+    },
+    {
+      "step": "graph",
+      "fact": "capability:com.example.customers/customers.register@1 --verified-by--> customers.lookup@1"
+    },
+    {
+      "step": "code",
+      "fact": "billing.contact@1 imports src/handlers/customers.lookup.mjs (directly or transitively)"
+    },
+    {
+      "step": "probes",
+      "fact": "customers.register@1 is not an observation: not probed for regression on existing state"
+    },
+    {
+      "step": "probes",
+      "fact": "verify customers.register@1 (its declared state verification re-reads through the target)"
+    },
+    {
+      "step": "probes",
+      "fact": "customers.list@1 needs no input and returns https://schema.example.com/crm/Customer: it enumerates existing state"
+    },
+    {
+      "step": "permissions",
+      "fact": "verification session is granted only [customers.read, customers.write]"
+    },
+    {
+      "step": "context",
+      "fact": "edit src/handlers/customers.lookup.mjs: implements customers.lookup@1"
+    },
+    {
+      "step": "context",
+      "fact": "read src/legacy/crm.mjs: imported by the current implementation (src/handlers/customers.lookup.mjs)"
+    },
+    {
+      "step": "context",
+      "fact": "read src/handlers/customers.register.mjs: customers.register@1 changes resource:urn:example:customers:customer, which the target reads"
+    },
+    {
+      "step": "context",
+      "fact": "read src/store.mjs: imported by src/handlers/customers.register.mjs"
+    },
+    {
+      "step": "context",
+      "fact": "read src/handlers/customers.list.mjs: customers.list@1 reads resource:urn:example:customers:customer, which the target reads"
+    }
+  ]
+}
