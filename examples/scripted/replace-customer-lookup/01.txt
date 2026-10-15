@@ -1,0 +1,16 @@
+The lookup should read from the application's customer store, which `customers.register` writes, instead of the stale legacy export.
+
+=== FILE: src/handlers/customers.lookup.mjs ===
+```js
+import { getCustomer } from "../store.mjs";
+
+// Reads the customer from the application's store (the system of record).
+export async function lookupCustomer(input) {
+  const customer = getCustomer(input.customerId);
+  if (!customer) {
+    throw new Error(`Customer ${input.customerId} not found`);
+  }
+  return { ...customer };
+}
+```
+=== END FILE ===

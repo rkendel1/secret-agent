@@ -1,0 +1,96 @@
+[   258 ms] observe      8 source file(s), @appport packages [@appport/authorization@1.0.4, @appport/core@1.2.0, @appport/protocol@1.1.0, @appport/schema@1.1.0, @appport/server@1.1.2], application src/app.mjs#createCustomersApplication
+[   258 ms] observe      declares customers.register@1 at src/contract.mjs:41 → src/handlers/customers.register.mjs#registerCustomer
+[   258 ms] observe      declares customers.lookup@1 at src/contract.mjs:82 → src/handlers/customers.lookup.mjs#lookupCustomer
+[   258 ms] observe      declares customers.list@1 at src/contract.mjs:101 → src/handlers/customers.list.mjs#listCustomers
+[   258 ms] observe      declares billing.contact@1 at src/contract.mjs:118 → src/handlers/billing.contact.mjs#billingContact
+[   367 ms] contract     com.example.customers 1.0.0: 6 capability version(s), 1 event(s); graph 9 nodes / 13 edges; contractDigest sha256:4f6660b5135b0053debb5f16c4ce458cae6d62832a841672483b69e880c997ca
+[   374 ms] plan         contract: observed contract of com.example.customers is structurally valid
+[   374 ms] plan         target: customers.lookup@1: effect observation, 1 input field(s), 5 output field(s), 1 declared failure(s), 9 replacement constraint(s)
+[   374 ms] plan         source: customers.lookup@1 is declared in src/contract.mjs:82 and implemented in src/handlers/customers.lookup.mjs#lookupCustomer
+[   374 ms] plan         graph: capability:com.example.customers/billing.contact@1 --observes--> customers.lookup@1
+[   374 ms] plan         graph: capability:com.example.customers/customers.register@1 --verified-by--> customers.lookup@1
+[   374 ms] plan         code: billing.contact@1 imports src/handlers/customers.lookup.mjs (directly or transitively)
+[   374 ms] plan         probes: customers.register@1 is not an observation: not probed for regression on existing state
+[   374 ms] plan         probes: verify customers.register@1 (its declared state verification re-reads through the target)
+[   374 ms] plan         probes: customers.list@1 needs no input and returns https://schema.example.com/crm/Customer: it enumerates existing state
+[   374 ms] plan         permissions: verification session is granted only [customers.read, customers.write]
+[   374 ms] plan         context: edit src/handlers/customers.lookup.mjs: implements customers.lookup@1
+[   374 ms] plan         context: read src/legacy/crm.mjs: imported by the current implementation (src/handlers/customers.lookup.mjs)
+[   374 ms] plan         context: read src/handlers/customers.register.mjs: customers.register@1 changes resource:urn:example:customers:customer, which the target reads
+[   374 ms] plan         context: read src/store.mjs: imported by src/handlers/customers.register.mjs
+[   374 ms] plan         context: read src/handlers/customers.list.mjs: customers.list@1 reads resource:urn:example:customers:customer, which the target reads
+[   374 ms] plan         accept only if [edit.boundary] only the target's implementation module changes
+[   374 ms] plan         accept only if [runtime.load] the application loads and answers appport.manifest@1
+[   374 ms] plan         accept only if [contract.identity] the published contract is unchanged (contractDigest sha256:4f6660b5135b)
+[   374 ms] plan         accept only if [contract.valid] the published contract has no validation errors
+[   374 ms] plan         accept only if [output.conformance] every output observed conforms to its declared output schema
+[   374 ms] plan         accept only if [failures.declared] customers.lookup@1 fails only with its declared failure codes (NOT_FOUND)
+[   375 ms] plan         accept only if [behavior.regression] answers on existing state are unchanged for customers.lookup@1, billing.contact@1
+[   375 ms] plan         accept only if [verification] customers.register@1: declared verification (customer-readable, registered-event) is not contradicted and every state method confirms
+[   375 ms] model        model: scripted:examples/scripted/replace-customer-lookup
+[   493 ms] baseline     enumerate customers.list@1 {} → ok
+[   493 ms] baseline     regression customers.lookup@1 {"customerId":"cus_1001"} → ok
+[   493 ms] baseline     regression customers.lookup@1 {"customerId":"cus_1002"} → ok
+[   493 ms] baseline     regression customers.lookup@1 {"customerId":"cus_1003"} → ok
+[   493 ms] baseline     regression customers.lookup@1 {"customerId":"absent-customers.lookup-1"} → NOT_FOUND
+[   493 ms] baseline     regression billing.contact@1 {"customerId":"cus_1001"} → ok
+[   493 ms] baseline     regression billing.contact@1 {"customerId":"cus_1002"} → ok
+[   493 ms] baseline     regression billing.contact@1 {"customerId":"cus_1003"} → ok
+[   493 ms] baseline     regression billing.contact@1 {"customerId":"absent-billing.contact-1"} → NOT_FOUND
+[   493 ms] baseline     flow customers.register@1 {"name":"probe-1-name","email":"probe-1-email@example.com","tier":"gold"} → ok
+[   493 ms] baseline     probe customers.lookup@1 {"customerId":"cus_2001"} → NOT_FOUND
+[   493 ms] baseline     evidence customers.register@1: unverifiable (customer-readable unavailable, registered-event confirmed)
+[   510 ms] baseline     already failing: [verification] customers.register@1#customer-readable unavailable (NOT_FOUND): a state method must confirm
+[   511 ms] model        attempt 1: asking for the implementation (6873 bytes of context)
+[   511 ms] model        attempt 1: scripted/01.txt answered (1836 in / 135 out tokens, estimated)
+[   511 ms] apply        attempt 1: wrote src/handlers/customers.lookup.mjs
+[   636 ms] candidate    enumerate customers.list@1 {} → ok
+[   636 ms] candidate    regression customers.lookup@1 {"customerId":"cus_1001"} → ok
+[   636 ms] candidate    regression customers.lookup@1 {"customerId":"cus_1002"} → ok
+[   636 ms] candidate    regression customers.lookup@1 {"customerId":"cus_1003"} → ok
+[   636 ms] candidate    regression customers.lookup@1 {"customerId":"absent-customers.lookup-1"} → INTERNAL_ERROR
+[   636 ms] candidate    regression billing.contact@1 {"customerId":"cus_1001"} → ok
+[   636 ms] candidate    regression billing.contact@1 {"customerId":"cus_1002"} → ok
+[   636 ms] candidate    regression billing.contact@1 {"customerId":"cus_1003"} → ok
+[   636 ms] candidate    regression billing.contact@1 {"customerId":"absent-billing.contact-1"} → INTERNAL_ERROR
+[   636 ms] candidate    flow customers.register@1 {"name":"probe-1-name","email":"probe-1-email@example.com","tier":"gold"} → ok
+[   636 ms] candidate    probe customers.lookup@1 {"customerId":"cus_2001"} → ok
+[   636 ms] candidate    evidence customers.register@1: verified (customer-readable confirmed, registered-event confirmed)
+[   646 ms] verify       pass [edit.boundary] only the target's implementation module changes
+[   646 ms] verify       pass [runtime.load] the application loads and answers appport.manifest@1
+[   646 ms] verify       pass [contract.identity] the published contract is unchanged (contractDigest sha256:4f6660b5135b)
+[   646 ms] verify       pass [contract.valid] the published contract has no validation errors
+[   646 ms] verify       pass [output.conformance] every output observed conforms to its declared output schema
+[   646 ms] verify       FAIL [failures.declared] customers.lookup@1 fails only with its declared failure codes (NOT_FOUND)
+[   646 ms] verify            - customers.lookup@1 answered {"customerId":"absent-customers.lookup-1"} with INTERNAL_ERROR (Internal error); allowed: NOT_FOUND
+[   646 ms] verify       FAIL [behavior.regression] answers on existing state are unchanged for customers.lookup@1, billing.contact@1
+[   646 ms] verify            - customers.lookup@1 {"customerId":"absent-customers.lookup-1"}: was {"error":"NOT_FOUND"}, now {"error":"INTERNAL_ERROR"}
+[   646 ms] verify            - billing.contact@1 {"customerId":"absent-billing.contact-1"}: was {"error":"NOT_FOUND"}, now {"error":"INTERNAL_ERROR"}
+[   646 ms] verify       pass [verification] customers.register@1: declared verification (customer-readable, registered-event) is not contradicted and every state method confirms
+[   646 ms] verify       attempt 1: REJECTED
+[   647 ms] apply        attempt 1: rejected; the project is restored
+[   648 ms] model        attempt 2: asking for the implementation (7384 bytes of context, 3 violation(s) to fix)
+[   648 ms] model        attempt 2: scripted/02.txt answered (1964 in / 158 out tokens, estimated)
+[   649 ms] apply        attempt 2: wrote src/handlers/customers.lookup.mjs
+[   768 ms] candidate    enumerate customers.list@1 {} → ok
+[   768 ms] candidate    regression customers.lookup@1 {"customerId":"cus_1001"} → ok
+[   768 ms] candidate    regression customers.lookup@1 {"customerId":"cus_1002"} → ok
+[   768 ms] candidate    regression customers.lookup@1 {"customerId":"cus_1003"} → ok
+[   768 ms] candidate    regression customers.lookup@1 {"customerId":"absent-customers.lookup-1"} → NOT_FOUND
+[   768 ms] candidate    regression billing.contact@1 {"customerId":"cus_1001"} → ok
+[   768 ms] candidate    regression billing.contact@1 {"customerId":"cus_1002"} → ok
+[   768 ms] candidate    regression billing.contact@1 {"customerId":"cus_1003"} → ok
+[   768 ms] candidate    regression billing.contact@1 {"customerId":"absent-billing.contact-1"} → NOT_FOUND
+[   768 ms] candidate    flow customers.register@1 {"name":"probe-1-name","email":"probe-1-email@example.com","tier":"gold"} → ok
+[   768 ms] candidate    probe customers.lookup@1 {"customerId":"cus_2001"} → ok
+[   768 ms] candidate    evidence customers.register@1: verified (customer-readable confirmed, registered-event confirmed)
+[   777 ms] verify       pass [edit.boundary] only the target's implementation module changes
+[   777 ms] verify       pass [runtime.load] the application loads and answers appport.manifest@1
+[   777 ms] verify       pass [contract.identity] the published contract is unchanged (contractDigest sha256:4f6660b5135b)
+[   777 ms] verify       pass [contract.valid] the published contract has no validation errors
+[   777 ms] verify       pass [output.conformance] every output observed conforms to its declared output schema
+[   777 ms] verify       pass [failures.declared] customers.lookup@1 fails only with its declared failure codes (NOT_FOUND)
+[   777 ms] verify       pass [behavior.regression] answers on existing state are unchanged for customers.lookup@1, billing.contact@1
+[   777 ms] verify       pass [verification] customers.register@1: declared verification (customer-readable, registered-event) is not contradicted and every state method confirms
+[   777 ms] verify       attempt 2: ACCEPTED
+[   778 ms] done         ACCEPTED: 2 model call(s), 1 rejected; 4 application run(s); model used for discovery 0 times, for verification 0 times

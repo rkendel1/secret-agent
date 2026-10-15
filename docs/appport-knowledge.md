@@ -179,4 +179,6 @@ above `u32::MAX`; JavaScript accepts any integer up to `1e308`.
   `compareManifests` (their outputs on the fixtures are recorded, ready to
   parity-test a port).
 - Multi-application or live graph construction; project discovery; replacement
-  workflows; prompting/context assembly; any provider code.
+  workflows; prompting/context assembly; any provider code. (Project discovery,
+  the replacement workflow, context assembly and providers arrive in PR 2 on top
+  of this module, which they use unchanged: see `docs/agent-loop.md`.)

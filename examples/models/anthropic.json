@@ -1,0 +1,6 @@
+{
+  "provider": "anthropic",
+  "model": "claude-sonnet-5-5",
+  "apiKeyEnv": "ANTHROPIC_API_KEY",
+  "temperature": 0
+}
