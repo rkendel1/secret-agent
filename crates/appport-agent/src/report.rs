@@ -94,6 +94,13 @@ pub struct Attempt {
     pub evidence: Vec<String>,
     /// Whether the change was undone after rejection.
     pub rolled_back: bool,
+    /// Why the model stopped (`end_turn`, `max_tokens`, …), when reported.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub stop_reason: Option<String>,
+    /// The proposal changed the published contract (`contract.identity` failed).
+    pub contract_changed: bool,
+    /// The proposal wrote outside its edit boundary (`edit.boundary` failed).
+    pub outside_boundary: bool,
     pub duration_ms: u64,
 }
 

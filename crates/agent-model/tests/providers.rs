@@ -75,14 +75,36 @@ fn anthropic_messages_api() {
     config.model = Some("claude-x".into());
     config.base_url = Some(url);
     config.api_key_env = Some("AGENT_MODEL_TEST_ANTHROPIC_KEY".into());
+    config.effort = Some("high".into());
+    std::env::set_var("AGENT_MODEL_TEST_WORKSPACE", "wrkspc_test");
+    config.workspace_id_env = Some("AGENT_MODEL_TEST_WORKSPACE".into());
     let response = connect(&config).unwrap().complete(&request()).unwrap();
     assert_eq!((response.text.as_str(), response.usage.input_tokens, response.model.as_str()), ("ab", 20, "claude-x"));
     let (headers, body) = server.join().unwrap();
     assert!(headers[0].starts_with("post /v1/messages "));
     assert!(headers.contains(&"x-api-key: test-key".to_string()));
     assert!(headers.contains(&"anthropic-version: 2023-06-01".to_string()));
+    assert!(headers.contains(&"anthropic-workspace-id: wrkspc_test".to_string()));
+    assert_eq!(body["output_config"], json!({ "effort": "high" }));
+    assert!(body.get("temperature").is_none(), "current Claude models reject sampling parameters");
     assert_eq!(body["system"], "system text");
     assert_eq!(body["messages"], json!([{ "role": "user", "content": "prompt text" }]));
+}
+
+#[test]
+fn a_refusal_is_an_error_not_a_proposal() {
+    std::env::set_var("AGENT_MODEL_TEST_REFUSAL_KEY", "k");
+    let (url, server) = serve_once(
+        200,
+        json!({ "model": "m", "content": [], "stop_reason": "refusal", "stop_details": { "category": "cyber" }, "usage": { "input_tokens": 1, "output_tokens": 0 } }),
+    );
+    let mut config = ModelConfig::new(Provider::Anthropic);
+    config.model = Some("m".into());
+    config.base_url = Some(url);
+    config.api_key_env = Some("AGENT_MODEL_TEST_REFUSAL_KEY".into());
+    let error = connect(&config).unwrap().complete(&request()).unwrap_err().to_string();
+    assert!(error.contains("refusal") && error.contains("cyber"), "{error}");
+    server.join().unwrap();
 }
 
 #[test]

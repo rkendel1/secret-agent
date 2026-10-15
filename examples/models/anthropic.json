@@ -1,6 +1,8 @@
 {
   "provider": "anthropic",
-  "model": "claude-sonnet-5-5",
+  "model": "claude-opus-5-5",
   "apiKeyEnv": "ANTHROPIC_API_KEY",
-  "temperature": 0
+  "effort": "high",
+  "maxTokens": 16000,
+  "timeoutSecs": 600
 }

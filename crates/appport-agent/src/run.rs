@@ -220,6 +220,9 @@ pub fn run(options: &RunOptions) -> Result<RunReport, String> {
             verdict: None,
             evidence: Vec::new(),
             rolled_back: false,
+            stop_reason: response.stop_reason.clone(),
+            contract_changed: false,
+            outside_boundary: false,
             duration_ms: 0,
         };
 
@@ -235,6 +238,9 @@ pub fn run(options: &RunOptions) -> Result<RunReport, String> {
                         ),
                     );
                     Ok(vec![single])
+                }
+                None if response.stop_reason.as_deref() == Some("max_tokens") => {
+                    Err(format!("{problem} (the response was cut off at max_tokens)"))
                 }
                 None => Err(problem),
             });
@@ -290,6 +296,10 @@ pub fn run(options: &RunOptions) -> Result<RunReport, String> {
         deterministic.verification_methods_evaluated +=
             candidate.evidence.iter().map(|e| e.methods.len()).sum::<usize>();
         record.files_changed = changed;
+        let failed = |code: &str| verdict.checks.iter().any(|c| c.code == code && c.status == CheckStatus::Fail);
+        record.outside_boundary = failed("edit.boundary");
+        // Only meaningful when the application ran and published a manifest.
+        record.contract_changed = candidate.manifest.is_some() && failed("contract.identity");
         record.evidence = candidate
             .evidence
             .iter()

@@ -8,13 +8,13 @@ on:
     inputs:
       trials:
         description: Trials per arm and project
-        default: "3"
+        default: "10"
       local_model:
         description: Ollama model for the local leg
         default: qwen2.5-coder:7b
       remote_model:
         description: Anthropic model for the remote leg (needs the ANTHROPIC_API_KEY secret)
-        default: claude-sonnet-5-5
+        default: claude-opus-5-5
 
 jobs:
   local:
@@ -46,6 +46,8 @@ jobs:
     timeout-minutes: 120
     env:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      # Only for keys not scoped to a workspace.
+      ANTHROPIC_WORKSPACE_ID: ${{ secrets.ANTHROPIC_WORKSPACE_ID }}
     steps:
       - name: Require the key
         run: test -n "$ANTHROPIC_API_KEY" || { echo "set the ANTHROPIC_API_KEY repository secret"; exit 1; }

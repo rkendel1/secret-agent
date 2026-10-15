@@ -50,8 +50,18 @@ pub struct ModelConfig {
     pub max_tokens: u32,
     #[serde(default = "default_timeout")]
     pub timeout_secs: u64,
+    /// Sampling temperature, for providers and models that accept it (current
+    /// Claude models reject it; control them with `effort`).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub temperature: Option<f64>,
+    /// For `anthropic`: `output_config.effort` (`low` … `max`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub effort: Option<String>,
+    /// For `anthropic`: environment variable holding the workspace id, for keys
+    /// not scoped to one workspace (sent as `anthropic-workspace-id`). Default
+    /// `ANTHROPIC_WORKSPACE_ID`; nothing is sent when it is unset.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub workspace_id_env: Option<String>,
 }
 
 fn default_max_tokens() -> u32 {
@@ -74,6 +84,8 @@ impl ModelConfig {
             max_tokens: default_max_tokens(),
             timeout_secs: default_timeout(),
             temperature: None,
+            effort: None,
+            workspace_id_env: None,
         }
     }
 

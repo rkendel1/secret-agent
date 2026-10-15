@@ -61,6 +61,9 @@ pub struct Response {
     pub usage: Usage,
     /// The model that answered, as the provider reports it.
     pub model: String,
+    /// Why generation stopped, when the provider says (`end_turn`, `max_tokens`, …).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stop_reason: Option<String>,
 }
 
 /// Why a model call failed.
