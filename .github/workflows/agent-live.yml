@@ -7,17 +7,14 @@ on:
   workflow_dispatch:
     inputs:
       legs:
-        description: Which legs to run (comma-separated) - gateway, coding, arms, remote, local
+        description: Which legs to run (comma-separated) - gateway, coding, arms, remote
         default: gateway
       trials:
         description: Trials per arm and project
         default: "10"
-      local_model:
-        description: Ollama model for the local leg
-        default: qwen2.5-coder:7b
       gateway_model:
-        description: Vercel AI Gateway model for the gateway leg (needs the AI_GATEWAY_API_KEY secret)
-        default: anthropic/claude-opus-5.5
+        description: Vercel AI Gateway model for the gateway, coding and arms legs (needs the AI_GATEWAY_API_KEY secret); a cheap model by default
+        default: anthropic/claude-haiku-5.5
       min_success:
         description: Coding leg - fail when the observed arm's success rate is below this (0..1)
         default: "0.5"
@@ -29,31 +26,6 @@ on:
         default: claude-opus-5-5
 
 jobs:
-  local:
-    if: contains(inputs.legs, 'local')
-    runs-on: ubuntu-latest
-    timeout-minutes: 300
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - run: npm ci --prefix examples/customers-app --no-audit --no-fund
-      - name: Ollama
-        run: |
-          curl -fsSL https://ollama.com/install.sh | sh
-          (ollama serve > /tmp/ollama.log 2>&1 &)
-          for i in $(seq 1 30); do curl -sf http://localhost:11434/api/tags > /dev/null && break; sleep 2; done
-          ollama pull "${{ inputs.local_model }}"
-      - run: TRIALS="${{ inputs.trials }}" scripts/closed-loop-test.sh --config examples/models/ollama.json --model "${{ inputs.local_model }}"
-      - if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: eval-local
-          path: target/closed-loop
-
   remote:
     if: contains(inputs.legs, 'remote')
     runs-on: ubuntu-latest
@@ -86,7 +58,7 @@ jobs:
     timeout-minutes: 120
     env:
       AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
-      MODEL: ${{ inputs.gateway_model || 'anthropic/claude-opus-5.5' }}
+      MODEL: ${{ inputs.gateway_model || 'anthropic/claude-haiku-5.5' }}
       TRIALS: ${{ inputs.trials || '10' }}
     steps:
       - name: Require the key
@@ -138,7 +110,7 @@ jobs:
     timeout-minutes: 120
     env:
       AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
-      MODEL: ${{ inputs.gateway_model || 'anthropic/claude-opus-5.5' }}
+      MODEL: ${{ inputs.gateway_model || 'anthropic/claude-haiku-5.5' }}
       TRIALS: ${{ inputs.trials || '10' }}
       MIN_SUCCESS: ${{ inputs.min_success || '0.5' }}
     steps:
@@ -196,7 +168,7 @@ jobs:
     timeout-minutes: 120
     env:
       AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
-      MODEL: ${{ inputs.gateway_model || 'anthropic/claude-opus-5.5' }}
+      MODEL: ${{ inputs.gateway_model || 'anthropic/claude-haiku-5.5' }}
       TRIALS: ${{ inputs.trials || '10' }}
       BUDGET: ${{ inputs.budget_usd || '10' }}
     steps:
