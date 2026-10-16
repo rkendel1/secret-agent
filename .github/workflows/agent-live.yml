@@ -89,7 +89,19 @@ jobs:
         run: |
           curl -fsS https://ai-gateway.vercel.sh/v1/models -H "Authorization: Bearer $AI_GATEWAY_API_KEY" > models.json
           echo "Anthropic models on the gateway:"; jq -r '.data[].id' models.json | grep -i anthropic || true
-          jq -e --arg m "$MODEL" '.data | any(.id == $m)' models.json > /dev/null || { echo "model $MODEL is not offered by the gateway"; exit 1; }
+          if jq -e --arg m "$MODEL" '.data | any(.id == $m)' models.json > /dev/null; then
+            echo "using $MODEL"
+          else
+            # The gateway may spell versions differently (5.5 vs 5-5). Accept exactly one
+            # spelling of the requested family/version; anything else stops before any spend.
+            family=$(echo "$MODEL" | sed -E 's#^.*/##; s#[.-]#[.-]#g')
+            matches=$(jq -r '.data[].id' models.json | grep -E "^anthropic/${family}$" || true)
+            if [ "$(echo "$matches" | grep -c .)" = 1 ]; then
+              echo "using $matches (requested $MODEL)"; echo "MODEL=$matches" >> "$GITHUB_ENV"
+            else
+              echo "model $MODEL is not offered by the gateway (candidates: ${matches:-none})"; exit 1
+            fi
+          fi
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
