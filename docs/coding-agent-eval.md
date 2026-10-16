@@ -79,4 +79,4 @@ appport-agent code-eval --tasks fixtures/coding --config examples/models/anthrop
   --trials 10 --arms observed,minimal --out target/coding-live --require-test-runs
 ```
 
-Or run the manual **agent-live** workflow with `legs: coding` (Vercel AI Gateway, `min_success` threshold).
+Or run the manual **agent-live** workflow with `legs: coding` (a free Vercel AI Gateway model only, after a preflight; `min_success` threshold).

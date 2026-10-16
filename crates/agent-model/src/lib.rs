@@ -17,6 +17,7 @@
 //! | `scripted` | numbered files in a directory, in order | reproducible demos and CI; replays pre-written completions |
 
 mod config;
+pub mod gateway;
 mod providers;
 
 use std::fmt;

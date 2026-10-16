@@ -1,0 +1,47 @@
+{
+  "id": "billing-migration",
+  "expect": "verified-change",
+  "category": "incremental legacy replacement with an observable goal",
+  "project": "fixtures/appport-projects/customers-billing",
+  "goal": "Billing contacts must also work for customers registered since the last legacy CRM export: make billing.contact read the application's customer store instead of going through the legacy lookup code, keeping every answer it gives today.",
+  "target": "billing.contact@1",
+  "oracleTarget": "billing.contact@1",
+  "goalCheck": {
+    "description": "A customer registered through customers.register@1 gets a billing contact with the registered name and email.",
+    "steps": [
+      {
+        "capability": "customers.register@1",
+        "input": {
+          "name": "Goal Check",
+          "email": "goal.check@example.com",
+          "tier": "gold"
+        }
+      },
+      {
+        "capability": "billing.contact@1",
+        "input": {
+          "customerId": {
+            "$step": 0,
+            "at": "/customerId"
+          }
+        },
+        "expect": [
+          {
+            "at": "/email",
+            "equals": {
+              "$step": 0,
+              "input": "/email"
+            }
+          },
+          {
+            "at": "/name",
+            "equals": {
+              "$step": 0,
+              "input": "/name"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,3 @@
+=== ACTION: inspect ===
+{"capability": "billing.contact@1"}
+=== END ACTION ===

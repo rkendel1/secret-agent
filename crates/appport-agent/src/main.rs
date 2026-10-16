@@ -6,8 +6,9 @@ use std::time::Duration;
 
 use agent_core::generic::CodingContext;
 use agent_core::plan::ContextMode;
+use agent_model::gateway::{preflight, preflight_text, GatewayPolicy};
 use agent_model::{ModelConfig, Provider};
-use appport_agent::arms::{arm_eval, arm_markdown, Arm, ArmEvalOptions};
+use appport_agent::arms::{arm_eval, arm_markdown, Arm, ArmEvalOptions, SMOKE_TASKS};
 use appport_agent::coding::{coding_eval, coding_markdown, CodingEvalOptions};
 use appport_agent::eval::{eval, markdown, EvalOptions};
 use appport_agent::host::HostConfig;
@@ -23,8 +24,12 @@ USAGE
   appport-agent run  --project <dir> --intent <text> [model options] [run options]
   appport-agent plan --project <dir> --intent <text> [--json]
   appport-agent arm-eval --tasks <dir> [model options] --out <dir> [--trials <n>] [--arms A,B,C]
-                     [--max-attempts <n>] [--max-turns <n>] [--budget-usd <usd>] [--root <dir>]
+                     [--mode comparison|smoke|preflight] [--free-gateway]
+                     [--max-attempts <n>] [--max-turns <n>] [--budget-usd <usd>]
+                     [--max-model-calls <n>] [--max-minutes <m>] [--root <dir>]
                      (bare vs context-assisted vs AppPort-native: see docs/three-arm-eval.md)
+  appport-agent preflight [model options] [--out <dir>]
+                     (checks a free Vercel AI Gateway model before any live run)
   appport-agent code-eval --tasks <dir> [model options] --out <dir> [--trials <n>]
                      [--arms observed,minimal] [--min-success <0..1>] [--require-test-runs]
                      (ordinary repositories, no AppPort: see docs/coding-agent-eval.md)
@@ -58,11 +63,22 @@ EVAL OPTIONS
   --trials <n>             trials per arm (default 5); each starts from a fresh copy of --project
   --arms <list>            comma-separated context modes (default knowledge,bare)
 
+FREE GATEWAY (arm-eval --free-gateway, preflight)
+  The configuration must be the openai-compatible provider at https://ai-gateway.vercel.sh/v1,
+  the model must be on the free allowlist and priced at zero by the gateway catalog, and one
+  minimal completion must succeed, before any trial. Otherwise no trial runs and the exit
+  status is 1. The report goes to preflight.json and preflight.txt in --out.
+  --mode smoke             replace-lookup and contract-change, every arm, one trial
+  --mode preflight         the preflight only (implies --free-gateway)
+  --mode comparison        every task in --tasks, --trials trials (the default)
+
 EXIT STATUS
   run: 0 accepted, 1 rejected, 2 error
   eval: 0 when the first arm accepted at least one trial, 1 otherwise, 2 error
-  arm-eval: 1 when a trial hit a harness error, when no model call succeeded, or when more than
-            10% of trials hit provider errors; otherwise 0 (which arm wins never fails the run)
+  arm-eval: 1 when the preflight failed, when a trial hit a harness error, when no model call
+            succeeded, or when more than 10% of trials hit provider errors; otherwise 0 (which
+            arm wins never fails the run)
+  preflight: 0 when the model may be used, 1 otherwise
   code-eval: 0 when the first arm's success rate is at least --min-success (default 0)
              and, with --require-test-runs, every trial ran the test command; 1 otherwise";
 
@@ -86,7 +102,7 @@ fn main_inner() -> Result<ExitCode, String> {
     let mut flags: Vec<(String, Option<String>)> = Vec::new();
     while let Some(flag) = args.next() {
         let name = flag.strip_prefix("--").ok_or_else(|| format!("unexpected argument {flag:?}"))?.to_string();
-        let value = if matches!(name.as_str(), "json" | "quiet" | "require-test-runs") {
+        let value = if matches!(name.as_str(), "json" | "quiet" | "require-test-runs" | "free-gateway") {
             None
         } else {
             Some(args.next().ok_or_else(|| format!("--{name} needs a value"))?)
@@ -96,7 +112,7 @@ fn main_inner() -> Result<ExitCode, String> {
     let get = |name: &str| flags.iter().rev().find(|(n, _)| n == name).and_then(|(_, v)| v.clone());
     let has = |name: &str| flags.iter().any(|(n, _)| n == name);
     for (name, _) in &flags {
-        const KNOWN: [&str; 28] = [
+        const KNOWN: [&str; 32] = [
             "project",
             "intent",
             "config",
@@ -125,6 +141,10 @@ fn main_inner() -> Result<ExitCode, String> {
             "root",
             "max-turns",
             "budget-usd",
+            "mode",
+            "free-gateway",
+            "max-model-calls",
+            "max-minutes",
         ];
         if !KNOWN.contains(&name.as_str()) {
             return Err(format!("unknown option --{name}\n\n{USAGE}"));
@@ -132,7 +152,10 @@ fn main_inner() -> Result<ExitCode, String> {
     }
 
     if command == "arm-eval" {
-        return arm_eval_command(&get, has("quiet"));
+        return arm_eval_command(&get, has("quiet"), has("free-gateway"));
+    }
+    if command == "preflight" {
+        return preflight_command(&get);
     }
     if command == "code-eval" {
         return code_eval_command(&get, has("quiet"));
@@ -312,8 +335,30 @@ fn code_eval_command(get: &dyn Fn(&str) -> Option<String>, quiet: bool) -> Resul
     Ok(if ok { ExitCode::SUCCESS } else { ExitCode::from(1) })
 }
 
+/// `preflight`: may this configuration be used for a free live run?
+fn preflight_command(get: &dyn Fn(&str) -> Option<String>) -> Result<ExitCode, String> {
+    let model = model_config(get)?;
+    let report = preflight(&model, &GatewayPolicy::default());
+    let text = preflight_text(&report);
+    print!("{text}");
+    if let Some(out) = get("out").map(PathBuf::from) {
+        std::fs::create_dir_all(&out).map_err(|e| format!("{}: {e}", out.display()))?;
+        std::fs::write(out.join("preflight.json"), serde_json::to_string_pretty(&report).expect("serializes") + "\n")
+            .map_err(|e| e.to_string())?;
+        std::fs::write(out.join("preflight.txt"), &text).map_err(|e| e.to_string())?;
+    }
+    Ok(if report.proceed { ExitCode::SUCCESS } else { ExitCode::from(1) })
+}
+
 /// `arm-eval`: bare vs context-assisted vs AppPort-native on the same tasks.
-fn arm_eval_command(get: &dyn Fn(&str) -> Option<String>, quiet: bool) -> Result<ExitCode, String> {
+fn arm_eval_command(get: &dyn Fn(&str) -> Option<String>, quiet: bool, free_gateway: bool) -> Result<ExitCode, String> {
+    let mode = get("mode").unwrap_or_else(|| "comparison".into());
+    if !matches!(mode.as_str(), "comparison" | "smoke" | "preflight") {
+        return Err(format!("unknown --mode {mode:?}: use comparison, smoke or preflight"));
+    }
+    if mode == "preflight" {
+        return preflight_command(get);
+    }
     let root = PathBuf::from(get("tasks").ok_or("--tasks is required")?);
     let mut tasks: Vec<PathBuf> = std::fs::read_dir(&root)
         .map_err(|e| format!("{}: {e}", root.display()))?
@@ -324,6 +369,9 @@ fn arm_eval_command(get: &dyn Fn(&str) -> Option<String>, quiet: bool) -> Result
         tasks = vec![root.clone()];
     }
     tasks.sort();
+    if mode == "smoke" {
+        tasks.retain(|t| t.file_name().is_some_and(|n| SMOKE_TASKS.contains(&n.to_string_lossy().as_ref())));
+    }
     if tasks.is_empty() {
         return Err(format!("{} holds no task.json", root.display()));
     }
@@ -343,7 +391,7 @@ fn arm_eval_command(get: &dyn Fn(&str) -> Option<String>, quiet: bool) -> Result
         tasks,
         model: model_config(get)?,
         arms,
-        trials: number("trials", 5.0)? as u32,
+        trials: if mode == "smoke" { 1 } else { number("trials", 5.0)? as u32 },
         max_attempts: number("max-attempts", 3.0)? as u32,
         max_turns: number("max-turns", 12.0)? as u32,
         host: HostConfig {
@@ -355,6 +403,13 @@ fn arm_eval_command(get: &dyn Fn(&str) -> Option<String>, quiet: bool) -> Result
         budget_usd: get("budget-usd")
             .map(|v| v.parse::<f64>().map_err(|_| "--budget-usd must be a number"))
             .transpose()?,
+        max_model_calls: get("max-model-calls")
+            .map(|v| v.parse::<usize>().map_err(|_| "--max-model-calls must be a whole number"))
+            .transpose()?,
+        max_minutes: get("max-minutes")
+            .map(|v| v.parse::<f64>().map_err(|_| "--max-minutes must be a number"))
+            .transpose()?,
+        free_gateway: free_gateway.then(GatewayPolicy::default),
     })?;
     println!("{}", arm_markdown(&report));
     match appport_agent::arms::run_problem(&report) {

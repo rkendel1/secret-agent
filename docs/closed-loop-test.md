@@ -134,9 +134,9 @@ is the contract module, so `bare` sees the contract in source but not the
 constraints, the checks or the verification that depends on the target.
 
 To get the numbers, either run `scripts/closed-loop-test.sh --config …` where a
-model is reachable, or run the manual **agent-live** workflow (local leg: Ollama
-on the runner; remote leg: needs the `ANTHROPIC_API_KEY` repository secret).
-That workflow is written but has not been run yet.
+model is reachable, or run the manual **agent-live** workflow with `legs: gateway`
+(a free Vercel AI Gateway model only, after a preflight; see
+[the three-arm evaluation](three-arm-eval.md#live-runs-free-vercel-ai-gateway-model-only)).
 
 ## CI
 
