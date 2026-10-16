@@ -1,0 +1,30 @@
+{
+  "task": "missing-capability",
+  "expect": "limitation",
+  "arm": "C-native",
+  "trial": 4,
+  "order": 3,
+  "claim": "limitation",
+  "category": "correct-limitation",
+  "reason": "The application publishes no capability for deleting a customer. Its only customer capabilities are customers.list@1, customers.lookup@1 and billing.contact@1 (observations) and customers.register@1, which creates a customer. Deleting a record would need a new consequential capability, for example customers.delete@1, with its own contract: inputs, effect, authorization (probably customers.write or a dedicated permission), declared failures such as unknown customer, and verification methods. A deletion also affects dependents like billing.contact@1, so those contracts would have to say what happens to a deleted customer. I can only replace the implementation of an existing capability and must not add or change contracts, so this is out of my scope. Someone who owns the application's contracts needs to define and publish the new capability. After that, I can implement it.",
+  "oracle": {
+    "changedFiles": [],
+    "failedChecks": []
+  },
+  "modelCalls": 2,
+  "inputTokens": 1840,
+  "outputTokens": 353,
+  "tokensEstimated": false,
+  "costUsd": 0.01442,
+  "toolCalls": 2,
+  "appportBytes": 1614,
+  "proposals": 0,
+  "acceptedOnFirstProposal": false,
+  "rejectedProposals": 0,
+  "rollbacks": 0,
+  "boundaryViolations": 0,
+  "contractChangeAttempts": 0,
+  "unusableResponses": 0,
+  "applicationRuns": 2,
+  "wallMs": 10118
+}

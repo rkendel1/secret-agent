@@ -1,0 +1,238 @@
+{
+  "intent": "replace customers.lookup@1: Read customers from the application's customer store instead of the legacy CRM export.",
+  "contextMode": "bare",
+  "project": "target/arms-live/replace-lookup/A-bare-04/project",
+  "application": "com.example.customers",
+  "model": "anthropic:claude-opus-5-5 via https://api.anthropic.com/v1/messages",
+  "outcome": "rejected",
+  "baselineFailures": [
+    "[verification] customers.register@1#customer-readable unavailable (NOT_FOUND): a state method must confirm"
+  ],
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "claude-opus-5-5",
+      "usage": {
+        "input_tokens": 373,
+        "output_tokens": 745,
+        "estimated": false
+      },
+      "promptBytes": 957,
+      "responseBytes": 994,
+      "filesChanged": [
+        "src/handlers/customers.lookup.mjs"
+      ],
+      "verdict": {
+        "accepted": false,
+        "checks": [
+          {
+            "code": "edit.boundary",
+            "rule": "only the target's implementation module changes",
+            "status": "pass"
+          },
+          {
+            "code": "runtime.load",
+            "rule": "the application loads and answers appport.manifest@1",
+            "status": "fail",
+            "violations": [
+              "the application did not run: the application exited:     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:310:38) |     at ModuleJob._link (node:internal/modules/esm/module_job:182:49) { |   code: 'ERR_MODULE_NOT_FOUND', |   url: 'file://target/arms-live/replace-lookup/A-bare-04/project/src/store/customers.mjs' | } | Node.js v22.22.0"
+            ]
+          },
+          {
+            "code": "contract.identity",
+            "rule": "the published contract is unchanged (contractDigest sha256:4f6660b5135b)",
+            "status": "fail",
+            "violations": [
+              "the application did not run: the application exited:     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:310:38) |     at ModuleJob._link (node:internal/modules/esm/module_job:182:49) { |   code: 'ERR_MODULE_NOT_FOUND', |   url: 'file://target/arms-live/replace-lookup/A-bare-04/project/src/store/customers.mjs' | } | Node.js v22.22.0"
+            ]
+          },
+          {
+            "code": "contract.valid",
+            "rule": "the published contract has no validation errors",
+            "status": "fail",
+            "violations": [
+              "the application did not run: the application exited:     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:310:38) |     at ModuleJob._link (node:internal/modules/esm/module_job:182:49) { |   code: 'ERR_MODULE_NOT_FOUND', |   url: 'file://target/arms-live/replace-lookup/A-bare-04/project/src/store/customers.mjs' | } | Node.js v22.22.0"
+            ]
+          },
+          {
+            "code": "output.conformance",
+            "rule": "every output observed conforms to its declared output schema",
+            "status": "fail",
+            "violations": [
+              "the application did not run: the application exited:     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:310:38) |     at ModuleJob._link (node:internal/modules/esm/module_job:182:49) { |   code: 'ERR_MODULE_NOT_FOUND', |   url: 'file://target/arms-live/replace-lookup/A-bare-04/project/src/store/customers.mjs' | } | Node.js v22.22.0"
+            ]
+          },
+          {
+            "code": "failures.declared",
+            "rule": "customers.lookup@1 fails only with its declared failure codes (NOT_FOUND)",
+            "status": "fail",
+            "violations": [
+              "the application did not run: the application exited:     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:310:38) |     at ModuleJob._link (node:internal/modules/esm/module_job:182:49) { |   code: 'ERR_MODULE_NOT_FOUND', |   url: 'file://target/arms-live/replace-lookup/A-bare-04/project/src/store/customers.mjs' | } | Node.js v22.22.0"
+            ]
+          },
+          {
+            "code": "behavior.regression",
+            "rule": "answers on existing state are unchanged for customers.lookup@1, billing.contact@1",
+            "status": "fail",
+            "violations": [
+              "the application did not run: the application exited:     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:310:38) |     at ModuleJob._link (node:internal/modules/esm/module_job:182:49) { |   code: 'ERR_MODULE_NOT_FOUND', |   url: 'file://target/arms-live/replace-lookup/A-bare-04/project/src/store/customers.mjs' | } | Node.js v22.22.0"
+            ]
+          },
+          {
+            "code": "verification",
+            "rule": "customers.register@1: declared verification (customer-readable, registered-event) is not contradicted and every state method confirms",
+            "status": "fail",
+            "violations": [
+              "the application did not run: the application exited:     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:310:38) |     at ModuleJob._link (node:internal/modules/esm/module_job:182:49) { |   code: 'ERR_MODULE_NOT_FOUND', |   url: 'file://target/arms-live/replace-lookup/A-bare-04/project/src/store/customers.mjs' | } | Node.js v22.22.0"
+            ]
+          }
+        ]
+      },
+      "rolledBack": true,
+      "stopReason": "end_turn",
+      "contractChanged": false,
+      "outsideBoundary": false,
+      "durationMs": 7817
+    },
+    {
+      "attempt": 2,
+      "model": "claude-opus-5-5",
+      "usage": {
+        "input_tokens": 1656,
+        "output_tokens": 991,
+        "estimated": false
+      },
+      "promptBytes": 3855,
+      "responseBytes": 1352,
+      "filesChanged": [],
+      "unusable": "the response contains no `=== FILE: <path> ===` block",
+      "rolledBack": false,
+      "stopReason": "end_turn",
+      "contractChanged": false,
+      "outsideBoundary": false,
+      "durationMs": 11545
+    },
+    {
+      "attempt": 3,
+      "model": "claude-opus-5-5",
+      "usage": {
+        "input_tokens": 424,
+        "output_tokens": 545,
+        "estimated": false
+      },
+      "promptBytes": 1104,
+      "responseBytes": 847,
+      "filesChanged": [
+        "src/handlers/customers.lookup.mjs"
+      ],
+      "verdict": {
+        "accepted": false,
+        "checks": [
+          {
+            "code": "edit.boundary",
+            "rule": "only the target's implementation module changes",
+            "status": "pass"
+          },
+          {
+            "code": "runtime.load",
+            "rule": "the application loads and answers appport.manifest@1",
+            "status": "fail",
+            "violations": [
+              "the application did not run: the application exited:     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:310:38) |     at ModuleJob._link (node:internal/modules/esm/module_job:182:49) { |   code: 'ERR_MODULE_NOT_FOUND', |   url: 'file://target/arms-live/replace-lookup/A-bare-04/project/src/store/customers.mjs' | } | Node.js v22.22.0"
+            ]
+          },
+          {
+            "code": "contract.identity",
+            "rule": "the published contract is unchanged (contractDigest sha256:4f6660b5135b)",
+            "status": "fail",
+            "violations": [
+              "the application did not run: the application exited:     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:310:38) |     at ModuleJob._link (node:internal/modules/esm/module_job:182:49) { |   code: 'ERR_MODULE_NOT_FOUND', |   url: 'file://target/arms-live/replace-lookup/A-bare-04/project/src/store/customers.mjs' | } | Node.js v22.22.0"
+            ]
+          },
+          {
+            "code": "contract.valid",
+            "rule": "the published contract has no validation errors",
+            "status": "fail",
+            "violations": [
+              "the application did not run: the application exited:     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:310:38) |     at ModuleJob._link (node:internal/modules/esm/module_job:182:49) { |   code: 'ERR_MODULE_NOT_FOUND', |   url: 'file://target/arms-live/replace-lookup/A-bare-04/project/src/store/customers.mjs' | } | Node.js v22.22.0"
+            ]
+          },
+          {
+            "code": "output.conformance",
+            "rule": "every output observed conforms to its declared output schema",
+            "status": "fail",
+            "violations": [
+              "the application did not run: the application exited:     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:310:38) |     at ModuleJob._link (node:internal/modules/esm/module_job:182:49) { |   code: 'ERR_MODULE_NOT_FOUND', |   url: 'file://target/arms-live/replace-lookup/A-bare-04/project/src/store/customers.mjs' | } | Node.js v22.22.0"
+            ]
+          },
+          {
+            "code": "failures.declared",
+            "rule": "customers.lookup@1 fails only with its declared failure codes (NOT_FOUND)",
+            "status": "fail",
+            "violations": [
+              "the application did not run: the application exited:     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:310:38) |     at ModuleJob._link (node:internal/modules/esm/module_job:182:49) { |   code: 'ERR_MODULE_NOT_FOUND', |   url: 'file://target/arms-live/replace-lookup/A-bare-04/project/src/store/customers.mjs' | } | Node.js v22.22.0"
+            ]
+          },
+          {
+            "code": "behavior.regression",
+            "rule": "answers on existing state are unchanged for customers.lookup@1, billing.contact@1",
+            "status": "fail",
+            "violations": [
+              "the application did not run: the application exited:     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:310:38) |     at ModuleJob._link (node:internal/modules/esm/module_job:182:49) { |   code: 'ERR_MODULE_NOT_FOUND', |   url: 'file://target/arms-live/replace-lookup/A-bare-04/project/src/store/customers.mjs' | } | Node.js v22.22.0"
+            ]
+          },
+          {
+            "code": "verification",
+            "rule": "customers.register@1: declared verification (customer-readable, registered-event) is not contradicted and every state method confirms",
+            "status": "fail",
+            "violations": [
+              "the application did not run: the application exited:     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:310:38) |     at ModuleJob._link (node:internal/modules/esm/module_job:182:49) { |   code: 'ERR_MODULE_NOT_FOUND', |   url: 'file://target/arms-live/replace-lookup/A-bare-04/project/src/store/customers.mjs' | } | Node.js v22.22.0"
+            ]
+          }
+        ]
+      },
+      "rolledBack": true,
+      "stopReason": "end_turn",
+      "contractChanged": false,
+      "outsideBoundary": false,
+      "durationMs": 6720
+    }
+  ],
+  "totals": {
+    "modelCalls": 3,
+    "inputTokens": 2453,
+    "outputTokens": 2281,
+    "tokensEstimated": false,
+    "rejectedAttempts": 3,
+    "rollbacks": 2,
+    "wallMs": 26648
+  },
+  "deterministic": {
+    "sourceFilesObserved": 8,
+    "capabilitiesInContract": 6,
+    "capabilitiesLocatedInSource": 4,
+    "graphNodes": 9,
+    "graphEdges": 13,
+    "dependentsOfTarget": 2,
+    "replacementConstraints": 9,
+    "acceptanceChecks": 8,
+    "decisions": 15,
+    "permissionsGranted": [
+      "customers.read",
+      "customers.write"
+    ],
+    "applicationRuns": 4,
+    "envelopesExchanged": 17,
+    "verificationMethodsEvaluated": 2,
+    "modelCallsForDiscovery": 0,
+    "modelCallsForVerification": 0
+  },
+  "context": {
+    "filesSent": 1,
+    "projectSourceFiles": 8,
+    "sourceBytesSent": 474,
+    "projectSourceBytes": 8750,
+    "knowledgeBytesSent": 0
+  },
+  "startedAt": "2026-10-16T00:41:46.863Z"
+}

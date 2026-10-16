@@ -1,0 +1,49 @@
+{
+  "outcome": "limitation",
+  "reason": "The application publishes no capability that deletes a customer. Its customer capabilities are customers.list@1, customers.lookup@1 and billing.contact@1, which only observe, and customers.register@1, which is consequential but only creates customers. Deleting a record would need a new capability with its own contract: its inputs, its consequential effect, an authorization such as customers.write or a dedicated delete permission, declared failures such as 'not found', and verification. It would also need a decision on what happens to dependants like billing.contact@1 when a customer is removed. I cannot meet the goal by changing one capability's implementation. Changing an existing capability to delete records would break its contract. A delete capability (for example customers.delete@1) must first be defined and added to the application's contracts. Once it exists, its implementation can be written and verified.",
+  "model": "anthropic:claude-opus-5-5 via https://api.anthropic.com/v1/messages",
+  "turns": [
+    {
+      "turn": 1,
+      "usage": {
+        "input_tokens": 604,
+        "output_tokens": 43,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "list_capabilities",
+      "resultBytes": 1614,
+      "durationMs": 1966
+    },
+    {
+      "turn": 2,
+      "usage": {
+        "input_tokens": 1236,
+        "output_tokens": 357,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "limitation",
+      "resultBytes": 22,
+      "durationMs": 7017
+    }
+  ],
+  "toolCalls": {
+    "limitation": 1,
+    "list_capabilities": 1
+  },
+  "proposals": [],
+  "refusedCompletions": 0,
+  "modelCalls": 2,
+  "inputTokens": 1840,
+  "outputTokens": 400,
+  "tokensEstimated": false,
+  "discoveryBytes": 1614,
+  "toolResultBytes": 1636,
+  "applicationRuns": 2,
+  "envelopes": 2,
+  "rollbacks": 0,
+  "acceptedFiles": [],
+  "wallMs": 9417,
+  "startedAt": "2026-10-16T00:28:11.520Z"
+}

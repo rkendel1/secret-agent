@@ -1,0 +1,75 @@
+{
+  "outcome": "limitation",
+  "reason": "customers.lookup@1 cannot be switched safely because the change could not be verified. Its contract declares no verification methods and marks evidence as not establishable ('establishable': false). Effect, integration and verification are all listed as unknowns. The only check left would be comparing against earlier answers. That check is not a valid test here, because changing the data source from the legacy CRM export (src/legacy/crm.mjs, which maps cust_id/full_name/mail/level via TIERS/created) to the customer store is meant to change where answers come from. Any differences, such as tier mapping, 'since' timestamp encoding, or records present in only one source, could not be told apart from regressions. There is also an effect issue: the contract declares no effect, and reading from a different store could change what agents may assume. What's needed first is a contract-level verification method for customers.lookup@1, for example a fixture-based or store-backed conformance check covering the output schema, the tier enum and the ISO-8601 'since' field, and the not-found failure. Ideally the contract would also declare the effect as read-only. With that in place, the handler src/handlers/customers.lookup.mjs can be rewritten to read from the customer store and verified.",
+  "model": "anthropic:claude-opus-5-5 via https://api.anthropic.com/v1/messages",
+  "turns": [
+    {
+      "turn": 1,
+      "usage": {
+        "input_tokens": 622,
+        "output_tokens": 56,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "inspect",
+      "resultBytes": 3020,
+      "durationMs": 2527
+    },
+    {
+      "turn": 2,
+      "usage": {
+        "input_tokens": 1789,
+        "output_tokens": 195,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "read",
+      "resultBytes": 562,
+      "durationMs": 6355
+    },
+    {
+      "turn": 3,
+      "usage": {
+        "input_tokens": 2253,
+        "output_tokens": 50,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "list_capabilities",
+      "resultBytes": 1576,
+      "durationMs": 1725
+    },
+    {
+      "turn": 4,
+      "usage": {
+        "input_tokens": 2884,
+        "output_tokens": 536,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "limitation",
+      "resultBytes": 22,
+      "durationMs": 6772
+    }
+  ],
+  "toolCalls": {
+    "inspect": 1,
+    "limitation": 1,
+    "list_capabilities": 1,
+    "read": 1
+  },
+  "proposals": [],
+  "refusedCompletions": 0,
+  "modelCalls": 4,
+  "inputTokens": 7548,
+  "outputTokens": 837,
+  "tokensEstimated": false,
+  "discoveryBytes": 4596,
+  "toolResultBytes": 5180,
+  "applicationRuns": 2,
+  "envelopes": 2,
+  "rollbacks": 0,
+  "acceptedFiles": [],
+  "wallMs": 17797,
+  "startedAt": "2026-10-16T00:29:29.497Z"
+}

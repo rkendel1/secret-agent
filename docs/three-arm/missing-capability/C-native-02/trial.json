@@ -1,0 +1,30 @@
+{
+  "task": "missing-capability",
+  "expect": "limitation",
+  "arm": "C-native",
+  "trial": 2,
+  "order": 2,
+  "claim": "limitation",
+  "category": "correct-limitation",
+  "reason": "The application has no capability for deleting a customer record. It publishes only appport.manifest@1, appport.ping@1, billing.contact@1, customers.list@1, customers.lookup@1 (all read-only) and customers.register@1 (creates customers). I can only replace the implementation of an existing capability. I cannot add a capability or change a contract, so changing any existing implementation cannot meet this goal. Repurposing one would also break its contract: for example, making customers.register@1 delete records. Meeting the goal needs a new consequential capability, such as customers.delete@1. Its contract must be defined first: the input (the customer id), the output, the required authorization (presumably customers.write or a new customers.delete scope), declared failures (for example, customer not found), and verification methods. Its effect on dependents must also be decided, since billing.contact@1 reads customer records. Once that contract exists in the application, its implementation can be proposed and verified.",
+  "oracle": {
+    "changedFiles": [],
+    "failedChecks": []
+  },
+  "modelCalls": 2,
+  "inputTokens": 1840,
+  "outputTokens": 450,
+  "tokensEstimated": false,
+  "costUsd": 0.01636,
+  "toolCalls": 2,
+  "appportBytes": 1614,
+  "proposals": 0,
+  "acceptedOnFirstProposal": false,
+  "rejectedProposals": 0,
+  "rollbacks": 0,
+  "boundaryViolations": 0,
+  "contractChangeAttempts": 0,
+  "unusableResponses": 0,
+  "applicationRuns": 2,
+  "wallMs": 12679
+}

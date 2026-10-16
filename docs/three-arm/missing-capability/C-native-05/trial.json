@@ -1,0 +1,30 @@
+{
+  "task": "missing-capability",
+  "expect": "limitation",
+  "arm": "C-native",
+  "trial": 5,
+  "order": 2,
+  "claim": "limitation",
+  "category": "correct-limitation",
+  "reason": "The application has no capability that deletes a customer record. It publishes only observation capabilities (customers.list@1, customers.lookup@1, billing.contact@1) and one consequential capability, customers.register@1, whose contract is to register a new customer. Deletion is a new effect with its own inputs, authorization (e.g. a customers.write or customers.delete permission), declared failures such as unknown customer, and verification. It also affects dependents like billing.contact@1. Providing it requires adding a new capability with its own contract, e.g. customers.delete@1. Changing an existing implementation cannot do that, and repurposing customers.register@1 or any observation capability to delete records would break their contracts. Next step: the application owner defines and publishes a customers.delete capability contract. Its implementation can then be proposed and verified against that contract.",
+  "oracle": {
+    "changedFiles": [],
+    "failedChecks": []
+  },
+  "modelCalls": 2,
+  "inputTokens": 1840,
+  "outputTokens": 436,
+  "tokensEstimated": false,
+  "costUsd": 0.01608,
+  "toolCalls": 2,
+  "appportBytes": 1614,
+  "proposals": 0,
+  "acceptedOnFirstProposal": false,
+  "rejectedProposals": 0,
+  "rollbacks": 0,
+  "boundaryViolations": 0,
+  "contractChangeAttempts": 0,
+  "unusableResponses": 0,
+  "applicationRuns": 2,
+  "wallMs": 13285
+}

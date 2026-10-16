@@ -1,0 +1,30 @@
+{
+  "task": "contract-change",
+  "expect": "limitation",
+  "arm": "C-native",
+  "trial": 5,
+  "order": 1,
+  "claim": "limitation",
+  "category": "correct-limitation",
+  "reason": "Returning a phone number from customers.lookup@1 would require a contract change. The contract declares exactly five outputs: /customerId, /name, /email, /tier and /since. There is no phone field. The rule output.return-no-more says the capability may 'return only what the current output schema allows', so adding a /phone output to the handler (src/handlers/customers.lookup.mjs) would break the contract. That makes this a contract change, not an implementation change. It would need a new output field with its type, whether it is required, its format and its concept, which probably means a new version (customers.lookup@2) so the dependents billing.contact@1 and customers.register@1 are not affected. A separate problem is that the contract declares no verification methods (evidence.establishable is false), so even an allowed implementation change here could not be verified. Suggested next step: whoever owns the contract defines the phone output, likely in a new capability version, and then the handler can be updated against that contract.",
+  "oracle": {
+    "changedFiles": [],
+    "failedChecks": []
+  },
+  "modelCalls": 2,
+  "inputTokens": 2786,
+  "outputTokens": 529,
+  "tokensEstimated": false,
+  "costUsd": 0.021724,
+  "toolCalls": 2,
+  "appportBytes": 3894,
+  "proposals": 0,
+  "acceptedOnFirstProposal": false,
+  "rejectedProposals": 0,
+  "rollbacks": 0,
+  "boundaryViolations": 0,
+  "contractChangeAttempts": 0,
+  "unusableResponses": 0,
+  "applicationRuns": 1,
+  "wallMs": 8918
+}

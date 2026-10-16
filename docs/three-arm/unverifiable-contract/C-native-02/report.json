@@ -1,0 +1,49 @@
+{
+  "outcome": "limitation",
+  "reason": "customers.lookup@1 has no verification. Its contract lists no evidence methods (evidence.methods is empty, establishable is false) and its unknowns include 'verification', 'effect' and 'integration'. The agent cannot check a new implementation against the contract, so switching the handler (src/handlers/customers.lookup.mjs) from src/legacy/crm.mjs to the customer store cannot be verified. A store-backed implementation would also have to keep the exact output shape: customerId, name, email in email format, tier limited to standard/gold/platinum, and since as an ISO-8601 date-time. Nothing could confirm that. Before this change can be made safely, the contract owner needs to add a way to verify the capability, such as example cases or a comparison against reference outputs, and to declare its effect. With that in place, the implementation change can be proposed and verified.",
+  "model": "anthropic:claude-opus-5-5 via https://api.anthropic.com/v1/messages",
+  "turns": [
+    {
+      "turn": 1,
+      "usage": {
+        "input_tokens": 622,
+        "output_tokens": 56,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "inspect",
+      "resultBytes": 3020,
+      "durationMs": 6684
+    },
+    {
+      "turn": 2,
+      "usage": {
+        "input_tokens": 1789,
+        "output_tokens": 438,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "limitation",
+      "resultBytes": 22,
+      "durationMs": 5859
+    }
+  ],
+  "toolCalls": {
+    "inspect": 1,
+    "limitation": 1
+  },
+  "proposals": [],
+  "refusedCompletions": 0,
+  "modelCalls": 2,
+  "inputTokens": 2411,
+  "outputTokens": 494,
+  "tokensEstimated": false,
+  "discoveryBytes": 3020,
+  "toolResultBytes": 3042,
+  "applicationRuns": 1,
+  "envelopes": 1,
+  "rollbacks": 0,
+  "acceptedFiles": [],
+  "wallMs": 12981,
+  "startedAt": "2026-10-16T00:33:59.107Z"
+}

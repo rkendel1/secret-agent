@@ -1,0 +1,49 @@
+{
+  "outcome": "limitation",
+  "reason": "Returning a phone number from customers.lookup@1 would require changing its contract, so it can't be done by changing the implementation alone. The output schema declares exactly five fields: /customerId, /name, /email, /tier and /since. There is no phone field, and the mustPreserve rule 'output.return-no-more' says the capability may return only what the current output schema allows. Adding /phone to responses would break that rule. To meet this goal, the contract owner would need to add an optional /phone output, either to customers.lookup@1 if the authority allows that, or in a new version such as customers.lookup@2. The mustPreserve rules allow new annotations on fields, and a new phone field would ideally carry a concept annotation such as a crm Phone concept. The CRM data source (src/legacy/crm.mjs) would also need to provide phone data. Separately, the contract declares no verification methods (evidence.establishable: false), so even an allowed change could only be checked against previous answers and the schema. Billing.contact@1 observes this capability, so its owners should be consulted on the contract change. I proposed no change and modified no files.",
+  "model": "anthropic:claude-opus-5-5 via https://api.anthropic.com/v1/messages",
+  "turns": [
+    {
+      "turn": 1,
+      "usage": {
+        "input_tokens": 616,
+        "output_tokens": 86,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "inspect",
+      "resultBytes": 3894,
+      "durationMs": 2069
+    },
+    {
+      "turn": 2,
+      "usage": {
+        "input_tokens": 2145,
+        "output_tokens": 498,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "limitation",
+      "resultBytes": 22,
+      "durationMs": 9918
+    }
+  ],
+  "toolCalls": {
+    "inspect": 1,
+    "limitation": 1
+  },
+  "proposals": [],
+  "refusedCompletions": 0,
+  "modelCalls": 2,
+  "inputTokens": 2761,
+  "outputTokens": 584,
+  "tokensEstimated": false,
+  "discoveryBytes": 3894,
+  "toolResultBytes": 3916,
+  "applicationRuns": 1,
+  "envelopes": 1,
+  "rollbacks": 0,
+  "acceptedFiles": [],
+  "wallMs": 12447,
+  "startedAt": "2026-10-16T00:31:08.333Z"
+}

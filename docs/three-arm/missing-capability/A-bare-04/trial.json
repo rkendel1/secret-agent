@@ -1,0 +1,30 @@
+{
+  "task": "missing-capability",
+  "expect": "limitation",
+  "arm": "A-bare",
+  "trial": 4,
+  "order": 1,
+  "claim": "limitation",
+  "category": "correct-limitation",
+  "reason": "unsupported intent \"Staff need to be able to delete a customer record through the application.\": expected `replace <name>@<version>[: <goal>]`",
+  "oracle": {
+    "changedFiles": [],
+    "failedChecks": []
+  },
+  "modelCalls": 0,
+  "inputTokens": 0,
+  "outputTokens": 0,
+  "tokensEstimated": false,
+  "costUsd": 0.0,
+  "toolCalls": 0,
+  "appportBytes": 0,
+  "proposals": 0,
+  "acceptedOnFirstProposal": false,
+  "rejectedProposals": 0,
+  "rollbacks": 0,
+  "boundaryViolations": 0,
+  "contractChangeAttempts": 0,
+  "unusableResponses": 0,
+  "applicationRuns": 0,
+  "wallMs": 0
+}

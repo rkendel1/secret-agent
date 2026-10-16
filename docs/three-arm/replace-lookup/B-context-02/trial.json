@@ -1,0 +1,90 @@
+{
+  "task": "replace-lookup",
+  "expect": "verified-change",
+  "arm": "B-context",
+  "trial": 2,
+  "order": 3,
+  "claim": "accepted",
+  "category": "verified-success",
+  "oracle": {
+    "changedFiles": [
+      "src/handlers/customers.lookup.mjs"
+    ],
+    "verified": true,
+    "failedChecks": [],
+    "verdict": {
+      "accepted": true,
+      "checks": [
+        {
+          "code": "edit.boundary",
+          "rule": "only the target's implementation module changes",
+          "status": "pass"
+        },
+        {
+          "code": "runtime.load",
+          "rule": "the application loads and answers appport.manifest@1",
+          "status": "pass"
+        },
+        {
+          "code": "contract.identity",
+          "rule": "the published contract is unchanged (contractDigest sha256:4f6660b5135b)",
+          "status": "pass",
+          "notes": [
+            "contractDigest sha256:4f6660b5135b0053debb5f16c4ce458cae6d62832a841672483b69e880c997ca"
+          ]
+        },
+        {
+          "code": "contract.valid",
+          "rule": "the published contract has no validation errors",
+          "status": "pass"
+        },
+        {
+          "code": "output.conformance",
+          "rule": "every output observed conforms to its declared output schema",
+          "status": "pass",
+          "notes": [
+            "9 output(s) conform"
+          ]
+        },
+        {
+          "code": "failures.declared",
+          "rule": "customers.lookup@1 fails only with its declared failure codes (NOT_FOUND)",
+          "status": "pass"
+        },
+        {
+          "code": "behavior.regression",
+          "rule": "answers on existing state are unchanged for customers.lookup@1, billing.contact@1",
+          "status": "pass",
+          "notes": [
+            "8 answer(s) on existing state unchanged"
+          ]
+        },
+        {
+          "code": "verification",
+          "rule": "customers.register@1: declared verification (customer-readable, registered-event) is not contradicted and every state method confirms",
+          "status": "pass",
+          "notes": [
+            "customers.register@1#customer-readable confirmed (establishes)",
+            "customers.register@1#registered-event confirmed (corroborates)"
+          ]
+        }
+      ]
+    }
+  },
+  "modelCalls": 1,
+  "inputTokens": 2695,
+  "outputTokens": 437,
+  "tokensEstimated": false,
+  "costUsd": 0.01952,
+  "toolCalls": 0,
+  "appportBytes": 1339,
+  "proposals": 1,
+  "acceptedOnFirstProposal": true,
+  "rejectedProposals": 0,
+  "rollbacks": 0,
+  "boundaryViolations": 0,
+  "contractChangeAttempts": 0,
+  "unusableResponses": 0,
+  "applicationRuns": 3,
+  "wallMs": 5367
+}

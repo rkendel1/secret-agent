@@ -1,0 +1,30 @@
+{
+  "task": "contract-change",
+  "expect": "limitation",
+  "arm": "C-native",
+  "trial": 3,
+  "order": 3,
+  "claim": "limitation",
+  "category": "correct-limitation",
+  "reason": "The goal needs a contract change, which I'm not allowed to make. The output schema of customers.lookup@1 declares only customerId, name, email, tier and since. It has no phone field. Its preservation rule 'output.return-no-more' says the capability may 'return only what the current output schema allows'. So returning a phone number means adding a new output field (e.g. /phone, perhaps with a crm/Phone concept) to the contract, either in customers.lookup@1 or in a new version such as customers.lookup@2. Changing the handler alone can't do it. The contract also declares no verification methods (evidence.methods is empty, establishable: false), so even an allowed change could not be checked against declared verification. Suggested next step: the contract owner adds an optional phone output (or publishes a new version) and declares a way to verify it. Then the handler in src/handlers/customers.lookup.mjs can be updated to fill it from src/legacy/crm.mjs. Dependents to consider: billing.contact@1 (observes, required) and customers.register@1 (verified-by).",
+  "oracle": {
+    "changedFiles": [],
+    "failedChecks": []
+  },
+  "modelCalls": 2,
+  "inputTokens": 2761,
+  "outputTokens": 577,
+  "tokensEstimated": false,
+  "costUsd": 0.022584,
+  "toolCalls": 2,
+  "appportBytes": 3894,
+  "proposals": 0,
+  "acceptedOnFirstProposal": false,
+  "rejectedProposals": 0,
+  "rollbacks": 0,
+  "boundaryViolations": 0,
+  "contractChangeAttempts": 0,
+  "unusableResponses": 0,
+  "applicationRuns": 1,
+  "wallMs": 8257
+}

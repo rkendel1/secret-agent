@@ -1,0 +1,115 @@
+{
+  "intent": "replace billing.contact@1: Make billing contacts come from the application's customer store directly instead of going through the legacy lookup code, keeping every answer it gives today.",
+  "contextMode": "knowledge",
+  "project": "target/arms-live/billing-from-store/B-context-02/project",
+  "application": "com.example.customers",
+  "model": "anthropic:claude-opus-5-5 via https://api.anthropic.com/v1/messages",
+  "outcome": "accepted",
+  "baselineFailures": [],
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "claude-opus-5-5",
+      "usage": {
+        "input_tokens": 1621,
+        "output_tokens": 1272,
+        "estimated": false
+      },
+      "promptBytes": 4517,
+      "responseBytes": 1632,
+      "filesChanged": [
+        "src/handlers/billing.contact.mjs"
+      ],
+      "verdict": {
+        "accepted": true,
+        "checks": [
+          {
+            "code": "edit.boundary",
+            "rule": "only the target's implementation module changes",
+            "status": "pass"
+          },
+          {
+            "code": "runtime.load",
+            "rule": "the application loads and answers appport.manifest@1",
+            "status": "pass"
+          },
+          {
+            "code": "contract.identity",
+            "rule": "the published contract is unchanged (contractDigest sha256:4f6660b5135b)",
+            "status": "pass",
+            "notes": [
+              "contractDigest sha256:4f6660b5135b0053debb5f16c4ce458cae6d62832a841672483b69e880c997ca"
+            ]
+          },
+          {
+            "code": "contract.valid",
+            "rule": "the published contract has no validation errors",
+            "status": "pass"
+          },
+          {
+            "code": "output.conformance",
+            "rule": "every output observed conforms to its declared output schema",
+            "status": "pass",
+            "notes": [
+              "4 output(s) conform"
+            ]
+          },
+          {
+            "code": "failures.declared",
+            "rule": "billing.contact@1 fails only with its declared failure codes (NOT_FOUND)",
+            "status": "pass"
+          },
+          {
+            "code": "behavior.regression",
+            "rule": "answers on existing state are unchanged for billing.contact@1",
+            "status": "pass",
+            "notes": [
+              "4 answer(s) on existing state unchanged"
+            ]
+          }
+        ]
+      },
+      "rolledBack": false,
+      "stopReason": "end_turn",
+      "contractChanged": false,
+      "outsideBoundary": false,
+      "durationMs": 13573
+    }
+  ],
+  "totals": {
+    "modelCalls": 1,
+    "inputTokens": 1621,
+    "outputTokens": 1272,
+    "tokensEstimated": false,
+    "rejectedAttempts": 0,
+    "rollbacks": 0,
+    "wallMs": 14194
+  },
+  "deterministic": {
+    "sourceFilesObserved": 8,
+    "capabilitiesInContract": 6,
+    "capabilitiesLocatedInSource": 4,
+    "graphNodes": 9,
+    "graphEdges": 13,
+    "dependentsOfTarget": 0,
+    "replacementConstraints": 8,
+    "acceptanceChecks": 7,
+    "decisions": 7,
+    "permissionsGranted": [
+      "customers.read"
+    ],
+    "applicationRuns": 3,
+    "envelopesExchanged": 13,
+    "verificationMethodsEvaluated": 0,
+    "modelCallsForDiscovery": 0,
+    "modelCallsForVerification": 0
+  },
+  "context": {
+    "filesSent": 2,
+    "projectSourceFiles": 8,
+    "sourceBytesSent": 804,
+    "projectSourceBytes": 8750,
+    "knowledgeBytesSent": 947
+  },
+  "startedAt": "2026-10-16T00:29:47.778Z"
+}

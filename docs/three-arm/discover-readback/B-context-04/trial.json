@@ -1,0 +1,97 @@
+{
+  "task": "discover-readback",
+  "expect": "verified-change",
+  "arm": "B-context",
+  "trial": 4,
+  "order": 3,
+  "claim": "limitation",
+  "category": "wrong-limitation",
+  "reason": "unsupported intent \"A customer who has just been registered cannot be read back through the application. Find the capability responsible and fix its implementation, without changing any contract.\": expected `replace <name>@<version>[: <goal>]`",
+  "oracle": {
+    "changedFiles": [],
+    "verified": false,
+    "failedChecks": [
+      "edit.boundary",
+      "verification"
+    ],
+    "verdict": {
+      "accepted": false,
+      "checks": [
+        {
+          "code": "edit.boundary",
+          "rule": "only the target's implementation module changes",
+          "status": "fail",
+          "violations": [
+            "the change touched no file"
+          ]
+        },
+        {
+          "code": "runtime.load",
+          "rule": "the application loads and answers appport.manifest@1",
+          "status": "pass"
+        },
+        {
+          "code": "contract.identity",
+          "rule": "the published contract is unchanged (contractDigest sha256:4f6660b5135b)",
+          "status": "pass",
+          "notes": [
+            "contractDigest sha256:4f6660b5135b0053debb5f16c4ce458cae6d62832a841672483b69e880c997ca"
+          ]
+        },
+        {
+          "code": "contract.valid",
+          "rule": "the published contract has no validation errors",
+          "status": "pass"
+        },
+        {
+          "code": "output.conformance",
+          "rule": "every output observed conforms to its declared output schema",
+          "status": "pass",
+          "notes": [
+            "8 output(s) conform"
+          ]
+        },
+        {
+          "code": "failures.declared",
+          "rule": "customers.lookup@1 fails only with its declared failure codes (NOT_FOUND)",
+          "status": "pass"
+        },
+        {
+          "code": "behavior.regression",
+          "rule": "answers on existing state are unchanged for customers.lookup@1, billing.contact@1",
+          "status": "pass",
+          "notes": [
+            "8 answer(s) on existing state unchanged"
+          ]
+        },
+        {
+          "code": "verification",
+          "rule": "customers.register@1: declared verification (customer-readable, registered-event) is not contradicted and every state method confirms",
+          "status": "fail",
+          "violations": [
+            "customers.register@1#customer-readable unavailable (NOT_FOUND): a state method must confirm"
+          ],
+          "notes": [
+            "customers.register@1#registered-event confirmed (corroborates)"
+          ]
+        }
+      ]
+    }
+  },
+  "modelCalls": 0,
+  "inputTokens": 0,
+  "outputTokens": 0,
+  "tokensEstimated": false,
+  "costUsd": 0.0,
+  "toolCalls": 0,
+  "appportBytes": 0,
+  "proposals": 0,
+  "acceptedOnFirstProposal": false,
+  "rejectedProposals": 0,
+  "rollbacks": 0,
+  "boundaryViolations": 0,
+  "contractChangeAttempts": 0,
+  "unusableResponses": 0,
+  "applicationRuns": 0,
+  "wallMs": 0
+}
