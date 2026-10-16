@@ -1,0 +1,56 @@
+--- a/src/text/slug.js
++++ b/src/text/slug.js
+@@ -1,12 +1,50 @@
+ /**
+  * A URL slug: lowercase ASCII letters and digits separated by single hyphens.
+  * Accents are dropped ("Café" -> "cafe"); anything else separates words.
++ *
++ * Options:
++ *   maxLength - if given, the slug is at most this many characters long.
++ *               It never ends with a hyphen, and it is cut at a word
++ *               boundary when possible. A word is only cut in half when the
++ *               first word alone is longer than maxLength.
+  */
+-export function slugify(text) {
+-  return text
++export function slugify(text, options = {}) {
++  const slug = text
+     .normalize("NFKD")
+-    .replace(/[̀-ͯ]/g, "")
++    .replace(/[\u0300-\u036f]/g, "")
+     .toLowerCase()
+     .replace(/[^a-z0-9]+/g, "-")
+     .replace(/^-+|-+$/g, "");
++
++  const maxLength = options == null ? undefined : options.maxLength;
++  if (maxLength == null) {
++    return slug;
++  }
++
++  const limit = Math.floor(Number(maxLength));
++  if (Number.isNaN(limit)) {
++    return slug;
++  }
++  if (limit <= 0) {
++    return "";
++  }
++  if (slug.length <= limit) {
++    return slug;
++  }
++
++  const cut = slug.slice(0, limit);
++
++  // The cut lands exactly on a word boundary.
++  if (slug[limit] === "-") {
++    return cut.replace(/-+$/g, "");
++  }
++
++  // Back up to the last complete word, if there is one.
++  const lastHyphen = cut.lastIndexOf("-");
++  if (lastHyphen > 0) {
++    return cut.slice(0, lastHyphen).replace(/-+$/g, "");
++  }
++
++  // The first word alone is too long; cutting it is unavoidable.
++  return cut.replace(/-+$/g, "");
+ }
