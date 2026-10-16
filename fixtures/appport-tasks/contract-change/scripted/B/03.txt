@@ -1,0 +1,10 @@
+=== FILE: src/handlers/customers.lookup.mjs ===
+import { errors } from "@appport/protocol";
+import { getCustomer } from "../store.mjs";
+
+export async function lookupCustomer(input) {
+  const customer = getCustomer(input.customerId);
+  if (!customer) throw errors.notFound(`no customer ${input.customerId}`);
+  return { ...customer, phone: customer.phone ?? "" };
+}
+=== END FILE ===

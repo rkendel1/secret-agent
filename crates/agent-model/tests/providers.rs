@@ -5,7 +5,7 @@ use std::io::{BufRead, BufReader, Read, Write};
 use std::net::TcpListener;
 use std::thread;
 
-use agent_model::{connect, ModelConfig, Provider, Request};
+use agent_model::{connect, ModelConfig, Provider, Request, Role, Turn};
 use serde_json::{json, Value};
 
 /// Serves one HTTP request with `body`; returns what the client sent (headers, JSON body).
@@ -39,7 +39,7 @@ fn serve_once(status: u16, body: Value) -> (String, thread::JoinHandle<(Vec<Stri
 }
 
 fn request() -> Request {
-    Request { system: "system text".into(), prompt: "prompt text".into(), max_tokens: 100 }
+    Request::new("system text", "prompt text", 100)
 }
 
 #[test]
@@ -175,4 +175,35 @@ fn shipped_example_configurations_parse() {
         providers.push(ModelConfig::from_file(&entry.unwrap().path()).unwrap().provider);
     }
     assert!(providers.contains(&Provider::OpenAiCompatible) && providers.contains(&Provider::Anthropic));
+}
+
+#[test]
+fn conversations_replay_assistant_turns_unchanged() {
+    std::env::set_var("AGENT_MODEL_TEST_HISTORY_KEY", "k");
+    let (url, server) = serve_once(
+        200,
+        json!({ "model": "m", "content": [{ "type": "text", "text": "ok" }], "stop_reason": "end_turn", "usage": { "input_tokens": 1, "output_tokens": 1 } }),
+    );
+    let mut config = ModelConfig::new(Provider::Anthropic);
+    config.model = Some("m".into());
+    config.base_url = Some(url);
+    config.api_key_env = Some("AGENT_MODEL_TEST_HISTORY_KEY".into());
+    let raw =
+        json!([{ "type": "thinking", "thinking": "", "signature": "sig" }, { "type": "text", "text": "first answer" }]);
+    let mut request = Request::new("s", "second question", 100);
+    request.history = vec![
+        Turn { role: Role::User, text: "first question".into(), raw: None },
+        Turn { role: Role::Assistant, text: "first answer".into(), raw: Some(raw.clone()) },
+    ];
+    let response = connect(&config).unwrap().complete(&request).unwrap();
+    assert_eq!(response.raw, Some(json!([{ "type": "text", "text": "ok" }])));
+    let (_, body) = server.join().unwrap();
+    assert_eq!(
+        body["messages"],
+        json!([
+            { "role": "user", "content": "first question" },
+            { "role": "assistant", "content": raw },
+            { "role": "user", "content": "second question" }
+        ])
+    );
 }

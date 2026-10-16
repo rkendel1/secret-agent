@@ -1,0 +1,3 @@
+=== ACTION: complete ===
+{"summary": "customers.register@1 verifies through customers.lookup@1, which read the stale export"}
+=== END ACTION ===

@@ -7,6 +7,7 @@ use std::time::Duration;
 use agent_core::generic::CodingContext;
 use agent_core::plan::ContextMode;
 use agent_model::{ModelConfig, Provider};
+use appport_agent::arms::{arm_eval, arm_markdown, Arm, ArmEvalOptions};
 use appport_agent::coding::{coding_eval, coding_markdown, CodingEvalOptions};
 use appport_agent::eval::{eval, markdown, EvalOptions};
 use appport_agent::host::HostConfig;
@@ -21,6 +22,9 @@ satisfies its contract.
 USAGE
   appport-agent run  --project <dir> --intent <text> [model options] [run options]
   appport-agent plan --project <dir> --intent <text> [--json]
+  appport-agent arm-eval --tasks <dir> [model options] --out <dir> [--trials <n>] [--arms A,B,C]
+                     [--max-attempts <n>] [--max-turns <n>] [--budget-usd <usd>] [--root <dir>]
+                     (bare vs context-assisted vs AppPort-native: see docs/three-arm-eval.md)
   appport-agent code-eval --tasks <dir> [model options] --out <dir> [--trials <n>]
                      [--arms observed,minimal] [--min-success <0..1>] [--require-test-runs]
                      (ordinary repositories, no AppPort: see docs/coding-agent-eval.md)
@@ -57,6 +61,7 @@ EVAL OPTIONS
 EXIT STATUS
   run: 0 accepted, 1 rejected, 2 error
   eval: 0 when the first arm accepted at least one trial, 1 otherwise, 2 error
+  arm-eval: 0 unless a trial hit a harness error (the comparison itself never fails the run)
   code-eval: 0 when the first arm's success rate is at least --min-success (default 0)
              and, with --require-test-runs, every trial ran the test command; 1 otherwise";
 
@@ -90,7 +95,7 @@ fn main_inner() -> Result<ExitCode, String> {
     let get = |name: &str| flags.iter().rev().find(|(n, _)| n == name).and_then(|(_, v)| v.clone());
     let has = |name: &str| flags.iter().any(|(n, _)| n == name);
     for (name, _) in &flags {
-        const KNOWN: [&str; 25] = [
+        const KNOWN: [&str; 28] = [
             "project",
             "intent",
             "config",
@@ -116,12 +121,18 @@ fn main_inner() -> Result<ExitCode, String> {
             "min-success",
             "test-timeout",
             "require-test-runs",
+            "root",
+            "max-turns",
+            "budget-usd",
         ];
         if !KNOWN.contains(&name.as_str()) {
             return Err(format!("unknown option --{name}\n\n{USAGE}"));
         }
     }
 
+    if command == "arm-eval" {
+        return arm_eval_command(&get, has("quiet"));
+    }
     if command == "code-eval" {
         return code_eval_command(&get, has("quiet"));
     }
@@ -298,4 +309,57 @@ fn code_eval_command(get: &dyn Fn(&str) -> Option<String>, quiet: bool) -> Resul
         }
     }
     Ok(if ok { ExitCode::SUCCESS } else { ExitCode::from(1) })
+}
+
+/// `arm-eval`: bare vs context-assisted vs AppPort-native on the same tasks.
+fn arm_eval_command(get: &dyn Fn(&str) -> Option<String>, quiet: bool) -> Result<ExitCode, String> {
+    let root = PathBuf::from(get("tasks").ok_or("--tasks is required")?);
+    let mut tasks: Vec<PathBuf> = std::fs::read_dir(&root)
+        .map_err(|e| format!("{}: {e}", root.display()))?
+        .filter_map(|e| e.ok().map(|e| e.path()))
+        .filter(|p| p.join("task.json").is_file())
+        .collect();
+    if root.join("task.json").is_file() {
+        tasks = vec![root.clone()];
+    }
+    tasks.sort();
+    if tasks.is_empty() {
+        return Err(format!("{} holds no task.json", root.display()));
+    }
+    let arms = get("arms")
+        .unwrap_or_else(|| "A,B,C".into())
+        .split(',')
+        .map(|a| a.trim().parse::<Arm>())
+        .collect::<Result<Vec<_>, _>>()?;
+    let number = |name: &str, default: f64| -> Result<f64, String> {
+        get(name)
+            .map(|v| v.parse::<f64>().map_err(|_| format!("--{name} must be a number")))
+            .transpose()
+            .map(|v| v.unwrap_or(default))
+    };
+    let report = arm_eval(&ArmEvalOptions {
+        root: get("root").map_or_else(|| PathBuf::from("."), PathBuf::from),
+        tasks,
+        model: model_config(get)?,
+        arms,
+        trials: number("trials", 5.0)? as u32,
+        max_attempts: number("max-attempts", 3.0)? as u32,
+        max_turns: number("max-turns", 12.0)? as u32,
+        host: HostConfig {
+            node: get("node").map_or_else(|| PathBuf::from("node"), PathBuf::from),
+            timeout: Duration::from_secs(number("timeout", 20.0)? as u64),
+        },
+        out: PathBuf::from(get("out").ok_or("--out is required")?),
+        quiet,
+        budget_usd: get("budget-usd")
+            .map(|v| v.parse::<f64>().map_err(|_| "--budget-usd must be a number"))
+            .transpose()?,
+    })?;
+    println!("{}", arm_markdown(&report));
+    let broken = report.trials.iter().filter(|t| t.category == "harness-error").count();
+    if broken > 0 {
+        eprintln!("FAILED: {broken} trial(s) hit a harness error");
+        return Ok(ExitCode::from(1));
+    }
+    Ok(ExitCode::SUCCESS)
 }

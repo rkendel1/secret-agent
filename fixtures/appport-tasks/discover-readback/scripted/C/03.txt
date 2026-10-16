@@ -1,0 +1,3 @@
+=== ACTION: invoke ===
+{"capability": "customers.register@1", "input": {"name": "x", "email": "x@example.com", "tier": "gold"}}
+=== END ACTION ===

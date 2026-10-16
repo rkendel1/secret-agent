@@ -27,11 +27,41 @@ pub use config::{ModelConfig, Provider};
 pub use providers::{connect, AnthropicModel, CommandModel, OpenAiCompatibleModel, ScriptedModel};
 
 /// What the model is given.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Request {
     pub system: String,
+    /// Earlier turns of the conversation, oldest first; empty for a single call.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub history: Vec<Turn>,
+    /// The new user message.
     pub prompt: String,
     pub max_tokens: u32,
+}
+
+impl Request {
+    /// A single-turn request.
+    pub fn new(system: impl Into<String>, prompt: impl Into<String>, max_tokens: u32) -> Request {
+        Request { system: system.into(), history: Vec::new(), prompt: prompt.into(), max_tokens }
+    }
+}
+
+/// Who spoke a turn.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Role {
+    User,
+    Assistant,
+}
+
+/// One earlier turn. `raw` is the provider's own content for an assistant turn
+/// (for the Anthropic API, its content blocks, thinking included), replayed
+/// unchanged so the conversation is never edited.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Turn {
+    pub role: Role,
+    pub text: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub raw: Option<serde_json::Value>,
 }
 
 /// Token usage for one call.
@@ -55,7 +85,7 @@ impl Usage {
 }
 
 /// What the model returned.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Response {
     pub text: String,
     pub usage: Usage,
@@ -64,6 +94,9 @@ pub struct Response {
     /// Why generation stopped, when the provider says (`end_turn`, `max_tokens`, …).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub stop_reason: Option<String>,
+    /// The provider's own content for this turn, to replay in a later [`Turn`].
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub raw: Option<serde_json::Value>,
 }
 
 /// Why a model call failed.

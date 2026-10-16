@@ -1,0 +1,9 @@
+{
+  "id": "billing-from-store",
+  "expect": "verified-change",
+  "category": "incremental legacy replacement preserving observable behaviour",
+  "project": "examples/customers-app",
+  "goal": "Make billing contacts come from the application's customer store directly instead of going through the legacy lookup code, keeping every answer it gives today.",
+  "target": "billing.contact@1",
+  "oracleTarget": "billing.contact@1"
+}

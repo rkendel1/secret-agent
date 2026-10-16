@@ -1,0 +1,3 @@
+=== ACTION: limitation ===
+{"reason": "the output schema has no phone field and does not allow additional properties; returning a phone number needs a contract change"}
+=== END ACTION ===

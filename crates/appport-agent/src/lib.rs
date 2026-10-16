@@ -8,11 +8,13 @@
 //! contract the application's own runtime publishes and from what the running
 //! application answers.
 
+pub mod arms;
 pub mod coding;
 pub mod collect;
 pub mod edit;
 pub mod eval;
 pub mod host;
+pub mod native;
 pub mod report;
 pub mod run;
 

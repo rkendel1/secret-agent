@@ -1,0 +1,9 @@
+{
+  "id": "contract-change",
+  "expect": "limitation",
+  "category": "unsupported operation: the goal needs a contract change",
+  "project": "examples/customers-app",
+  "goal": "Customer lookups should also return each customer's phone number.",
+  "target": "customers.lookup@1",
+  "oracleTarget": null
+}
