@@ -707,6 +707,33 @@ fn diff(a: Option<f64>, b: Option<f64>, percent_points: bool) -> String {
     }
 }
 
+/// Why a run cannot be trusted as a comparison, if it cannot.
+///
+/// A run where the model never answered says nothing about the arms, even if
+/// some trials were settled before any model call.
+pub fn run_problem(report: &ArmEvalReport) -> Option<String> {
+    let broken = report.trials.iter().filter(|t| t.category == "harness-error").count();
+    if broken > 0 {
+        return Some(format!("{broken} trial(s) hit a harness error"));
+    }
+    let provider =
+        report.trials.iter().filter(|t| matches!(t.category.as_str(), "provider-error" | "provider-refusal")).count();
+    let answered = report.trials.iter().any(|t| t.model_calls > 0);
+    let ran = report.trials.iter().filter(|t| t.category != "not-run").count();
+    if provider > 0 && !answered {
+        let example =
+            report.trials.iter().find_map(|t| (t.category == "provider-error").then(|| t.reason.clone()).flatten());
+        return Some(format!(
+            "no model call succeeded ({provider} provider error(s)){}",
+            example.map(|e| format!(": {}", e.chars().take(200).collect::<String>())).unwrap_or_default()
+        ));
+    }
+    if ran > 0 && provider * 10 > ran {
+        return Some(format!("{provider} of {ran} trials hit provider errors (more than 10%)"));
+    }
+    None
+}
+
 /// A human-readable report.
 pub fn arm_markdown(report: &ArmEvalReport) -> String {
     let mut text = format!(
@@ -718,6 +745,16 @@ pub fn arm_markdown(report: &ArmEvalReport) -> String {
         report.started_at,
         report.finished_at
     );
+    let provider =
+        report.trials.iter().filter(|t| matches!(t.category.as_str(), "provider-error" | "provider-refusal")).count();
+    if provider > 0 {
+        text.push_str(&format!(
+            "> **Warning: {provider} of {} trials hit provider errors{}.** Those trials measured the provider, not the arms; {}\n\n",
+            report.trials.len(),
+            if report.trials.iter().any(|t| t.model_calls > 0) { "" } else { " and no model call succeeded" },
+            run_problem(report).map_or("treat the comparison with care.".to_string(), |p| format!("this run is not a valid comparison ({p})."))
+        ));
+    }
     text.push_str("## Effectiveness\n\n| arm | trials | verified successes (positive tasks) | first proposal | after retry | safe outcomes (negative tasks) | correct limitations | false successes | agent failures | provider / harness failures |\n|---|---|---|---|---|---|---|---|---|---|\n");
     for a in &report.arms {
         text.push_str(&format!(
@@ -864,6 +901,44 @@ mod tests {
         );
         assert_eq!(classify_error("model transport: timeout"), "provider-error");
         assert_eq!(classify_error("the unchanged application could not be probed: x"), "harness-error");
+    }
+
+    #[test]
+    fn a_run_where_the_model_never_answered_is_not_a_comparison() {
+        let mut t = blank(
+            &task("verified-change"),
+            Arm::Bare,
+            1,
+            1,
+            "provider-error",
+            Some("model provider answered 403: free tier".into()),
+        );
+        t.category = "provider-error".into();
+        let mut settled = blank(&task("limitation"), Arm::Context, 1, 2, "limitation", None);
+        settled.category = "correct-limitation".into();
+        let mut report = ArmEvalReport {
+            model: "m".into(),
+            max_attempts: 3,
+            max_turns: 12,
+            budget_usd: None,
+            started_at: String::new(),
+            finished_at: String::new(),
+            arms: Vec::new(),
+            cells: Vec::new(),
+            trials: vec![t.clone(), settled],
+        };
+        assert!(run_problem(&report).unwrap().contains("no model call succeeded"));
+        assert!(arm_markdown(&report).contains("not a valid comparison"));
+        report.trials = (0..20)
+            .map(|i| {
+                let mut ok = blank(&task("verified-change"), Arm::Native, i, 1, "accepted", None);
+                ok.category = "verified-success".into();
+                ok.model_calls = 2;
+                ok
+            })
+            .chain(std::iter::once(t))
+            .collect();
+        assert_eq!(run_problem(&report), None, "one transient provider error in 21 trials is tolerated");
     }
 
     #[test]

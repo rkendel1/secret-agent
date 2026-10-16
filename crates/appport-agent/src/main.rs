@@ -61,7 +61,8 @@ EVAL OPTIONS
 EXIT STATUS
   run: 0 accepted, 1 rejected, 2 error
   eval: 0 when the first arm accepted at least one trial, 1 otherwise, 2 error
-  arm-eval: 0 unless a trial hit a harness error (the comparison itself never fails the run)
+  arm-eval: 1 when a trial hit a harness error, when no model call succeeded, or when more than
+            10% of trials hit provider errors; otherwise 0 (which arm wins never fails the run)
   code-eval: 0 when the first arm's success rate is at least --min-success (default 0)
              and, with --require-test-runs, every trial ran the test command; 1 otherwise";
 
@@ -356,10 +357,11 @@ fn arm_eval_command(get: &dyn Fn(&str) -> Option<String>, quiet: bool) -> Result
             .transpose()?,
     })?;
     println!("{}", arm_markdown(&report));
-    let broken = report.trials.iter().filter(|t| t.category == "harness-error").count();
-    if broken > 0 {
-        eprintln!("FAILED: {broken} trial(s) hit a harness error");
-        return Ok(ExitCode::from(1));
+    match appport_agent::arms::run_problem(&report) {
+        Some(problem) => {
+            eprintln!("FAILED: {problem}");
+            Ok(ExitCode::from(1))
+        }
+        None => Ok(ExitCode::SUCCESS),
     }
-    Ok(ExitCode::SUCCESS)
 }
