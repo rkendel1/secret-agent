@@ -37,6 +37,19 @@ This path never touches AppPort knowledge, contracts or verification methods
 | `bugfix-invoice-discount` | bug fix | a percentage discount is applied as a fraction, in one of 4 modules |
 | `feature-slug-max-length` | feature | `slugify(text, { maxLength })`: word-boundary truncation, no trailing hyphen, cut a word only when unavoidable |
 
+The arms are **strategies** (`docs/agent-research/experiments.md`): a context strategy (`minimal`, `observed`, `dependency-aware`, `appport-aware`) and a recovery policy (`feedback`, `expand-context`, `stop-on-repeat`), judged identically. Every trial is scored into one category:
+- `verified-success`
+- `accepted-unverified`
+- `rejected`
+- `timed-out`
+- `patch-failed`
+- `limitation`
+- `provider-error`
+- `infrastructure-error`
+- `not-run`
+
+Provider and infrastructure failures are listed but not scored. The results below predate the strategy layer and used its two baseline arms.
+
 Two arms, judged identically:
 - **`observed`**: the editable file, the failing test, what the code imports, and the baseline test output.
 - **`minimal`**: the intent and the editable file only, with nothing observed about it.

@@ -1,0 +1,8 @@
+{
+  "schema": "secret-agent.experiment/1",
+  "id": "baseline",
+  "suite": "fixtures/coding",
+  "model": { "overrides": { "provider": "scripted" } },
+  "arms": [{ "id": "baseline", "context": "observed", "recovery": "feedback" }],
+  "trials": 1
+}

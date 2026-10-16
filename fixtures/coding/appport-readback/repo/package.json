@@ -1,0 +1,17 @@
+{
+  "name": "customers",
+  "private": true,
+  "type": "module",
+  "description": "The customers application (an AppPort application) as an ordinary repository with its own tests.",
+  "main": "./src/app.mjs",
+  "scripts": {
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@appport/authorization": "1.0.4",
+    "@appport/core": "1.2.0",
+    "@appport/protocol": "1.1.0",
+    "@appport/schema": "1.1.0",
+    "@appport/server": "1.1.2"
+  }
+}

@@ -256,6 +256,65 @@ pub fn tail(text: &str, limit: usize) -> &str {
     &text[start..]
 }
 
+/// What a model is shown for one coding attempt, already selected. A context
+/// strategy decides what goes in; [`render_coding_task`] only lays it out.
+#[derive(Debug, Clone, Default)]
+pub struct TaskView<'a> {
+    pub intent: &'a str,
+    /// The acceptance command, when the model is told it.
+    pub test: Option<&'a [String]>,
+    /// The test output before the change, when the model is shown it.
+    pub test_output: Option<&'a str>,
+    pub editable: Vec<&'a str>,
+    /// `(path, label, contents)`, in order.
+    pub files: Vec<(&'a str, String, &'a str)>,
+    /// Facts established about the repository, each with its source.
+    pub facts: Vec<String>,
+    pub feedback: &'a [String],
+}
+
+/// Lays out a [`TaskView`] as the model task.
+pub fn render_coding_task(view: &TaskView) -> ModelTask {
+    let system = format!(
+        "You are a careful software engineer making one change in a repository. Change only the editable files you \
+are given, and keep their existing exports working. The change is accepted only if the project's own tests pass; \
+test files are read-only. Reply with the complete new contents of each file you change, and nothing else, in this \
+exact form:\n{FILE_OPEN}<path> ===\n<entire file contents>\n{FILE_CLOSE}"
+    );
+    let mut prompt = format!("# Task\n{}\n\nEditable files: {}\n", view.intent, view.editable.join(", "));
+    if let Some(test) = view.test {
+        prompt.push_str(&format!("Acceptance: `{}` must pass.\n", test.join(" ")));
+    }
+    if let Some(output) = view.test_output {
+        prompt.push_str(&format!(
+            "\n# Test output before the change\n```\n{}\n```\n",
+            tail(output, OUTPUT_TAIL).trim_end()
+        ));
+    }
+    if !view.feedback.is_empty() {
+        prompt.push_str("\n# The previous attempt was rejected\n");
+        for item in view.feedback {
+            prompt.push_str(&format!("{item}\n"));
+        }
+        prompt.push_str("Fix the cause.\n");
+    }
+    if !view.facts.is_empty() {
+        prompt.push_str("\n# What is known about the repository\n");
+        for fact in &view.facts {
+            prompt.push_str(&format!("- {fact}\n"));
+        }
+    }
+    prompt.push_str("\n# Files\n");
+    for (path, label, contents) in &view.files {
+        prompt.push_str(&format!("## {path} ({label})\n```\n{}\n```\n", contents.trim_end()));
+    }
+    prompt.push_str(&format!(
+        "\nReply with the new contents of the files you change among: {}.\n",
+        view.editable.join(", ")
+    ));
+    ModelTask { system, prompt }
+}
+
 /// The model task for a coding plan.
 pub fn coding_task(
     mode: CodingContext,
@@ -264,49 +323,30 @@ pub fn coding_task(
     baseline: &Baseline,
     feedback: &[String],
 ) -> ModelTask {
-    let system = format!(
-        "You are a careful software engineer making one change in a repository. Change only the editable files you \
-are given, and keep their existing exports working. The change is accepted only if the project's own tests pass; \
-test files are read-only. Reply with the complete new contents of each file you change, and nothing else, in this \
-exact form:\n{FILE_OPEN}<path> ===\n<entire file contents>\n{FILE_CLOSE}"
-    );
-    let editable = plan.editable();
-    let mut prompt = format!("# Task\n{}\n\nEditable files: {}\n", plan.intent, editable.join(", "));
-    if mode == CodingContext::Observed {
-        prompt.push_str(&format!("Acceptance: `{}` must pass.\n", plan.test.join(" ")));
-        if !baseline.passed {
-            prompt.push_str(&format!(
-                "\n# Test output before the change\n```\n{}\n```\n",
-                tail(&baseline.output, OUTPUT_TAIL).trim_end()
-            ));
-        }
-    }
-    if !feedback.is_empty() {
-        prompt.push_str("\n# The previous attempt was rejected\n");
-        for item in feedback {
-            prompt.push_str(&format!("{item}\n"));
-        }
-        prompt.push_str("Fix the cause.\n");
-    }
-    prompt.push_str("\n# Files\n");
+    let observed = mode == CodingContext::Observed;
+    let mut view = TaskView {
+        intent: &plan.intent,
+        test: observed.then_some(plan.test.as_slice()),
+        test_output: (observed && !baseline.passed).then_some(baseline.output.as_str()),
+        editable: plan.editable(),
+        feedback,
+        ..TaskView::default()
+    };
     for file in &plan.context {
-        if mode == CodingContext::Minimal && !file.editable {
+        if !observed && !file.editable {
             continue;
         }
         let Some(contents) = files.get(&file.path) else { continue };
         // The minimal arm gets the file and nothing observed about it: the reason
         // would name the failing test.
-        let label = match mode {
-            CodingContext::Observed => {
-                format!("{}; {}", if file.editable { "EDITABLE" } else { "read-only" }, file.reason)
-            }
-            CodingContext::Minimal => "EDITABLE".to_string(),
+        let label = if observed {
+            format!("{}; {}", if file.editable { "EDITABLE" } else { "read-only" }, file.reason)
+        } else {
+            "EDITABLE".to_string()
         };
-        prompt.push_str(&format!("## {} ({label})\n```\n{}\n```\n", file.path, contents.trim_end()));
+        view.files.push((&file.path, label, contents));
     }
-    prompt
-        .push_str(&format!("\nReply with the new contents of the files you change among: {}.\n", editable.join(", ")));
-    ModelTask { system, prompt }
+    render_coding_task(&view)
 }
 
 #[cfg(test)]

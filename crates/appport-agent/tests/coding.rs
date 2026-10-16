@@ -7,7 +7,7 @@ use std::time::Duration;
 
 use agent_core::generic::CodingContext;
 use agent_model::{ModelConfig, Provider};
-use appport_agent::coding::{coding_eval, CodingEvalOptions};
+use appport_agent::coding::{coding_eval, CodingArm, CodingEvalOptions};
 
 fn fixtures() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../../fixtures/coding").canonicalize().unwrap()
@@ -17,17 +17,16 @@ fn fixtures() -> PathBuf {
 #[ignore = "needs Node.js 22+"]
 fn scripted_completions_are_judged_by_the_projects_own_tests() {
     let out = std::env::temp_dir().join(format!("appport-agent-coding-{}", std::process::id()));
-    let report = coding_eval(&CodingEvalOptions {
-        tasks: vec![fixtures().join("bugfix-invoice-discount"), fixtures().join("feature-slug-max-length")],
-        model: ModelConfig::new(Provider::Scripted),
-        arms: vec![CodingContext::Observed],
-        trials: 1,
-        max_attempts: 3,
-        test_timeout: Duration::from_secs(60),
-        out: out.clone(),
-        quiet: true,
-    })
-    .unwrap();
+    let mut options = CodingEvalOptions::new(
+        vec![fixtures().join("bugfix-invoice-discount"), fixtures().join("feature-slug-max-length")],
+        ModelConfig::new(Provider::Scripted),
+        vec![CodingArm::of(CodingContext::Observed)],
+        out.clone(),
+    );
+    options.trials = 1;
+    options.test_timeout = Duration::from_secs(60);
+    options.quiet = true;
+    let report = coding_eval(&options).unwrap();
 
     let bugfix = report.cells.iter().find(|c| c.task == "bugfix-invoice-discount").unwrap();
     // 01.txt edits the failing test instead of the code: never applied, then 02.txt fixes the code.

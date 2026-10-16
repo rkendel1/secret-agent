@@ -45,6 +45,8 @@ jobs:
       # by each project's own tests plus hidden acceptance tests.
       - run: scripts/check-coding-fixtures.sh
       - run: cargo run --quiet -p appport-agent -- code-eval --tasks fixtures/coding --provider scripted --trials 1 --arms observed --out target/coding-scripted --quiet --min-success 1 --require-test-runs
+      # The experiment harness end to end: a context ablation with scripted completions.
+      - run: cargo run --quiet -p appport-agent -- experiment --spec examples/experiments/context-ablation.json --quiet
       - if: always()
         uses: actions/upload-artifact@v4
         with:

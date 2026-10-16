@@ -1,0 +1,8 @@
+{
+  "id": "appport-readback",
+  "kind": "bug-fix",
+  "intent": "Customers who have just registered cannot be looked up: the lookup says they do not exist. Fix it without breaking lookups of existing customers.",
+  "test": ["npm", "test", "--silent"],
+  "hidden": ["node", "--test", "hidden/*.test.js"],
+  "intendedFiles": ["src/handlers/customers.lookup.mjs"]
+}

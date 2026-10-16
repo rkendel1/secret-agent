@@ -262,7 +262,8 @@ fn files(dir: &Path) -> BTreeMap<String, Vec<u8>> {
     out
 }
 
-fn changed_files(template: &Path, project: &Path) -> Vec<String> {
+/// Files that differ between `template` and `project` (added, changed or removed).
+pub fn changed_files(template: &Path, project: &Path) -> Vec<String> {
     let before = files(template);
     let after = files(project);
     let mut changed: Vec<String> =
@@ -686,7 +687,8 @@ fn summarize(arm: &str, task: &str, trials: &[&ArmTrial]) -> ArmSummary {
     }
 }
 
-fn provider_name(model: &ModelConfig) -> String {
+/// The provider's configuration name (`openai-compatible`, `scripted`, …).
+pub fn provider_name(model: &ModelConfig) -> String {
     serde_json::to_value(model.provider).ok().and_then(|v| v.as_str().map(str::to_string)).unwrap_or_default()
 }
 
@@ -705,7 +707,8 @@ pub struct Provenance {
     pub fixtures: BTreeMap<String, String>,
 }
 
-fn digest_files(dirs: &[&Path]) -> String {
+/// SHA-256 over every file under `dirs` (path and content), excluding dependencies and VCS data.
+pub fn digest_files(dirs: &[&Path]) -> String {
     let mut text = String::new();
     for dir in dirs {
         for (path, bytes) in files(dir) {
@@ -716,10 +719,20 @@ fn digest_files(dirs: &[&Path]) -> String {
 }
 
 fn provenance(options: &ArmEvalOptions, tasks: &[ArmTask]) -> Provenance {
+    let fixtures = tasks
+        .iter()
+        .zip(&options.tasks)
+        .map(|(t, dir)| (t.id.clone(), digest_files(&[dir, &options.root.join(&t.project)])))
+        .collect();
+    provenance_of(&options.root, &options.model, fixtures)
+}
+
+/// Where a run came from: commit, binary, model configuration (no secrets) and fixture digests.
+pub fn provenance_of(root: &Path, model: &ModelConfig, fixtures: BTreeMap<String, String>) -> Provenance {
     let git_commit = std::env::var("GITHUB_SHA").ok().filter(|s| !s.is_empty()).or_else(|| {
         std::process::Command::new("git")
             .args(["rev-parse", "HEAD"])
-            .current_dir(&options.root)
+            .current_dir(root)
             .output()
             .ok()
             .filter(|o| o.status.success())
@@ -729,12 +742,7 @@ fn provenance(options: &ArmEvalOptions, tasks: &[ArmTask]) -> Provenance {
         .ok()
         .and_then(|p| fs::read(p).ok())
         .map(|b| agent_core::appport::knowledge::rules::sha256_bytes_hex(&b));
-    let config = serde_json::to_value(&options.model).unwrap_or_default();
-    let fixtures = tasks
-        .iter()
-        .zip(&options.tasks)
-        .map(|(t, dir)| (t.id.clone(), digest_files(&[dir, &options.root.join(&t.project)])))
-        .collect();
+    let config = serde_json::to_value(model).unwrap_or_default();
     Provenance {
         git_commit,
         binary_sha256,

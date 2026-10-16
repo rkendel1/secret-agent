@@ -1,0 +1,5 @@
+[
+  { "cust_id": "cus_1001", "full_name": "Ada Lovelace", "mail": "ada@example.com", "level": "gold", "created": "2019-03-04T09:00:00.000Z" },
+  { "cust_id": "cus_1002", "full_name": "Grace Hopper", "mail": "grace@example.com", "level": "standard", "created": "2020-11-17T14:30:00.000Z" },
+  { "cust_id": "cus_1003", "full_name": "Edsger Dijkstra", "mail": "edsger@example.com", "level": "platinum", "created": "2021-06-01T08:15:00.000Z" }
+]

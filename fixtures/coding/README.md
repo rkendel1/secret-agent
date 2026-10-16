@@ -20,3 +20,4 @@ hidden tests.
 |---|---|---|
 | `bugfix-invoice-discount` | bug fix | a percentage discount is applied as a fraction; the failing test points at it among decoy modules |
 | `feature-slug-max-length` | feature | add `slugify(text, { maxLength })`: word-boundary truncation, no trailing hyphen, a word longer than the limit is cut |
+| `appport-readback` | bug fix | the customers application (an AppPort application) as an ordinary repository: a newly registered customer cannot be looked up, because the lookup reads a stale legacy export; hidden tests check existing customers, `NOT_FOUND`, and billing for new customers. Its `node_modules` links to `examples/customers-app` (run `npm ci` there). It is where the `appport-aware` context strategy can matter. |
