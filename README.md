@@ -46,8 +46,11 @@ scripts/closed-loop-test.sh                            # the closed-loop test (C
 appport-agent eval --project <dir> --intent "..." --config <model.json> --trials 5 --out target/eval
 
 appport-agent plan --project <dir> --intent "replace <name>@<version>: <goal>" --json   # no model involved
-appport-agent run  --project <dir> --intent "..." --config <model.json> --report report.json --log run.jsonl
+appport-agent run  --project <dir> --intent "..." --config <model.json> --report report.json --log run.jsonl \
+                   [--goal-check goal.json]
 ```
+
+`run` changes the project in place. It accepts a change only with evidence the goal was achieved, and its exit status says what happened: 0 accepted, 1 rejected, 3 declined, 4 provider failure, 5 the project needs attention. See [docs/agent-loop.md](docs/agent-loop.md#outcomes-and-exit-status). For what it can be trusted with today, see [docs/production-readiness.md](docs/production-readiness.md).
 
 ## Develop
 

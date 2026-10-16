@@ -34,7 +34,7 @@ fn options(gw: &FakeGateway, test: &str, tasks: &[&str]) -> ArmEvalOptions {
         trials: 1,
         max_attempts: 3,
         max_turns: 4,
-        host: HostConfig { node: "node".into(), timeout: Duration::from_secs(20) },
+        host: HostConfig { node: "node".into(), timeout: Duration::from_secs(20), ..HostConfig::default() },
         out: std::env::temp_dir().join(format!("appport-agent-free-{test}-{}", std::process::id())),
         quiet: true,
         budget_usd: Some(0.0),

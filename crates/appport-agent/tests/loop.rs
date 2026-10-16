@@ -78,6 +78,9 @@ fn agent(project: &Path, responses: PathBuf, max_attempts: u32) -> RunReport {
         log: Some(project.with_extension("log.jsonl")),
         quiet: true,
         context: Default::default(),
+        goal_check: None,
+        require_goal_evidence: true,
+        allow_dirty: false,
     })
     .unwrap()
 }

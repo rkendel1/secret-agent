@@ -13,6 +13,7 @@ pub mod coding;
 pub mod collect;
 pub mod edit;
 pub mod eval;
+pub mod goal;
 pub mod host;
 pub mod native;
 pub mod report;

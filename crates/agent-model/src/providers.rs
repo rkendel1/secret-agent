@@ -69,19 +69,104 @@ fn key(config: &ModelConfig, default_env: &str, required: bool) -> Result<Option
     }
 }
 
-fn post(agent: &Agent, url: &str, headers: &[(&str, String)], body: &Value) -> Result<Value, ModelError> {
-    let mut request = agent.post(url);
-    for (name, value) in headers {
-        request = request.header(*name, value.as_str());
+/// When and how often a request is retried.
+#[derive(Debug, Clone, Copy)]
+struct Retry {
+    max_retries: u32,
+    max_wait: Duration,
+}
+
+impl Retry {
+    fn of(config: &ModelConfig) -> Retry {
+        Retry { max_retries: config.max_retries, max_wait: Duration::from_secs(config.max_retry_wait_secs) }
     }
-    let mut response = request.send_json(body).map_err(|e| ModelError::Transport(format!("{url}: {e}")))?;
-    let status = response.status().as_u16();
-    let text = response.body_mut().read_to_string().map_err(|e| ModelError::Transport(e.to_string()))?;
-    if !(200..300).contains(&status) {
-        return Err(ModelError::Provider { status, body: text.chars().take(2000).collect() });
+}
+
+/// Statuses worth retrying: rate limits and overloaded or failing servers.
+fn retryable(status: u16) -> bool {
+    matches!(status, 429 | 500 | 502 | 503 | 504 | 529)
+}
+
+/// Exponential backoff from 500 ms, with up to 250 ms of jitter, capped.
+fn backoff(retry: u32, cap: Duration) -> Duration {
+    let nanos = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().subsec_nanos();
+    let jitter = Duration::from_millis(u64::from(nanos % 250));
+    (Duration::from_millis(500u64.saturating_mul(1 << retry.min(10))) + jitter).min(cap)
+}
+
+/// Sends one model request, retrying within `retry`. A model request has no
+/// effect beyond its answer, so repeating it is safe (a paid provider may bill
+/// each attempt). Retries happen here only: the agent's loops never retry a
+/// failed model call, so attempts do not multiply. Returns the answer and the
+/// number of retries it took. Secrets are redacted from any error body.
+fn post(
+    agent: &Agent,
+    url: &str,
+    headers: &[(&str, String)],
+    body: &Value,
+    retry: Retry,
+    secrets: &[String],
+) -> Result<(Value, u32), ModelError> {
+    let clean = |text: &str| crate::gateway::redact(text, secrets);
+    let mut retries = 0;
+    loop {
+        let mut request = agent.post(url);
+        for (name, value) in headers {
+            request = request.header(*name, value.as_str());
+        }
+        let (status, retry_after, text) = match request.send_json(body) {
+            Ok(mut response) => {
+                let status = response.status().as_u16();
+                let retry_after = response
+                    .headers()
+                    .get("retry-after")
+                    .and_then(|v| v.to_str().ok())
+                    .and_then(|v| v.trim().parse::<u64>().ok())
+                    .map(Duration::from_secs);
+                let text = response.body_mut().read_to_string().map_err(|e| ModelError::Transport(e.to_string()))?;
+                (status, retry_after, text)
+            }
+            // A timeout may mean the request is still being served: never repeated.
+            Err(ureq::Error::Timeout(t)) => return Err(ModelError::Transport(format!("{url}: timed out ({t})"))),
+            Err(e) if retries < retry.max_retries => {
+                retries += 1;
+                std::thread::sleep(backoff(retries, retry.max_wait));
+                let _ = e;
+                continue;
+            }
+            Err(e) => {
+                return Err(ModelError::Transport(format!(
+                    "{url}: {e}{}",
+                    if retries > 0 { format!(" (after {retries} retries)") } else { String::new() }
+                )))
+            }
+        };
+        if retryable(status) && retries < retry.max_retries {
+            let wait = retry_after.unwrap_or_else(|| backoff(retries + 1, retry.max_wait));
+            if wait <= retry.max_wait {
+                retries += 1;
+                std::thread::sleep(wait);
+                continue;
+            }
+        }
+        if !(200..300).contains(&status) {
+            let mut body: String = clean(&text).chars().take(2000).collect();
+            if retries > 0 {
+                body.push_str(&format!(" (after {retries} retries)"));
+            }
+            if let Some(wait) = retry_after.filter(|w| *w > retry.max_wait) {
+                body.push_str(&format!(
+                    " (Retry-After {}s exceeds the {}s limit)",
+                    wait.as_secs(),
+                    retry.max_wait.as_secs()
+                ));
+            }
+            return Err(ModelError::Provider { status, body });
+        }
+        return serde_json::from_str(&text).map(|v| (v, retries)).map_err(|e| {
+            ModelError::Protocol(format!("not JSON ({e}): {}", clean(&text).chars().take(500).collect::<String>()))
+        });
     }
-    serde_json::from_str(&text)
-        .map_err(|e| ModelError::Protocol(format!("not JSON ({e}): {}", text.chars().take(500).collect::<String>())))
 }
 
 fn trim_url(url: &str) -> &str {
@@ -96,6 +181,7 @@ pub struct OpenAiCompatibleModel {
     key: Option<String>,
     max_tokens: u32,
     temperature: Option<f64>,
+    retry: Retry,
 }
 
 impl OpenAiCompatibleModel {
@@ -111,6 +197,7 @@ impl OpenAiCompatibleModel {
             key: key(config, "OPENAI_API_KEY", false)?,
             max_tokens: config.max_tokens,
             temperature: config.temperature,
+            retry: Retry::of(config),
         })
     }
 }
@@ -130,12 +217,31 @@ impl Model for OpenAiCompatibleModel {
             body["temperature"] = json!(t);
         }
         let headers: Vec<(&str, String)> = self.key.iter().map(|k| ("authorization", format!("Bearer {k}"))).collect();
-        let answer = post(&self.agent, &self.url, &headers, &body)?;
+        let secrets: Vec<String> = self.key.iter().cloned().collect();
+        let (answer, retries) = post(&self.agent, &self.url, &headers, &body, self.retry, &secrets)?;
+        let finish = answer.pointer("/choices/0/finish_reason").and_then(Value::as_str).unwrap_or_default();
+        // A refusal is the provider declining, never a proposal and never an agent outcome.
+        if let Some(refusal) =
+            answer.pointer("/choices/0/message/refusal").and_then(Value::as_str).filter(|r| !r.is_empty())
+        {
+            return Err(ModelError::Protocol(format!(
+                "the model declined (stop_reason refusal, category {:?})",
+                refusal.chars().take(200).collect::<String>()
+            )));
+        }
+        if finish == "content_filter" {
+            return Err(ModelError::Protocol(
+                "the model declined (stop_reason refusal, category \"content_filter\")".into(),
+            ));
+        }
         let text = answer
             .pointer("/choices/0/message/content")
             .and_then(Value::as_str)
             .ok_or_else(|| ModelError::Protocol("no choices[0].message.content".into()))?
             .to_string();
+        if text.trim().is_empty() {
+            return Err(ModelError::Protocol(format!("empty completion (finish_reason {finish:?})")));
+        }
         let usage = match (answer.pointer("/usage/prompt_tokens"), answer.pointer("/usage/completion_tokens")) {
             (Some(i), Some(o)) => Usage {
                 input_tokens: i.as_u64().unwrap_or_default(),
@@ -147,7 +253,7 @@ impl Model for OpenAiCompatibleModel {
         let model = answer.get("model").and_then(Value::as_str).unwrap_or(&self.model).to_string();
         let stop_reason = answer.pointer("/choices/0/finish_reason").and_then(Value::as_str).map(str::to_string);
         let raw = None;
-        Ok(Response { text, usage, model, stop_reason, raw })
+        Ok(Response { text, usage, model, stop_reason, raw, retries })
     }
 }
 
@@ -161,6 +267,7 @@ pub struct AnthropicModel {
     max_tokens: u32,
     temperature: Option<f64>,
     effort: Option<String>,
+    retry: Retry,
 }
 
 impl AnthropicModel {
@@ -177,6 +284,7 @@ impl AnthropicModel {
             max_tokens: config.max_tokens,
             temperature: config.temperature,
             effort: config.effort.clone(),
+            retry: Retry::of(config),
         })
     }
 }
@@ -203,7 +311,8 @@ impl Model for AnthropicModel {
         if let Some(workspace) = &self.workspace {
             headers.push(("anthropic-workspace-id", workspace.clone()));
         }
-        let answer = post(&self.agent, &self.url, &headers, &body)?;
+        let secrets: Vec<String> = [Some(self.key.clone()), self.workspace.clone()].into_iter().flatten().collect();
+        let (answer, retries) = post(&self.agent, &self.url, &headers, &body, self.retry, &secrets)?;
         let stop_reason = answer.get("stop_reason").and_then(Value::as_str).map(str::to_string);
         if stop_reason.as_deref() == Some("refusal") {
             // Never retried on another model here: that would change what is being measured.
@@ -221,13 +330,19 @@ impl Model for AnthropicModel {
             .filter(|b| b.get("type").and_then(Value::as_str) == Some("text"))
             .filter_map(|b| b.get("text").and_then(Value::as_str))
             .collect();
+        if text.trim().is_empty() {
+            return Err(ModelError::Protocol(format!(
+                "empty completion (stop_reason {:?})",
+                stop_reason.unwrap_or_default()
+            )));
+        }
         let usage = Usage {
             input_tokens: answer.pointer("/usage/input_tokens").and_then(Value::as_u64).unwrap_or_default(),
             output_tokens: answer.pointer("/usage/output_tokens").and_then(Value::as_u64).unwrap_or_default(),
             estimated: answer.get("usage").is_none(),
         };
         let model = answer.get("model").and_then(Value::as_str).unwrap_or(&self.model).to_string();
-        Ok(Response { text, usage, model, stop_reason, raw })
+        Ok(Response { text, usage, model, stop_reason, raw, retries })
     }
 }
 
@@ -287,7 +402,7 @@ impl Model for CommandModel {
             return Err(ModelError::Transport(format!("{} exited with {status}", self.command[0])));
         }
         let usage = Usage::estimate(&format!("{}{}", request.system, request.prompt), &text);
-        Ok(Response { text, usage, model: self.command[0].clone(), stop_reason: None, raw: None })
+        Ok(Response { text, usage, model: self.command[0].clone(), stop_reason: None, raw: None, retries: 0 })
     }
 }
 
@@ -334,6 +449,6 @@ impl Model for ScriptedModel {
             std::fs::read_to_string(path).map_err(|e| ModelError::Transport(format!("{}: {e}", path.display())))?;
         let usage = Usage::estimate(&format!("{}{}", request.system, request.prompt), &text);
         let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
-        Ok(Response { text, usage, model: format!("scripted/{name}"), stop_reason: None, raw: None })
+        Ok(Response { text, usage, model: format!("scripted/{name}"), stop_reason: None, raw: None, retries: 0 })
     }
 }

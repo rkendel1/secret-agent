@@ -7,7 +7,7 @@
 use std::fs;
 use std::path::Path;
 
-use agent_core::observe::normalize;
+use agent_core::observe::{inside, normalize};
 use agent_core::plan::{FILE_CLOSE, FILE_OPEN};
 
 /// One file the model wants to write.
@@ -84,45 +84,218 @@ pub fn targets(edits: &[FileEdit]) -> Result<Vec<String>, String> {
         .collect()
 }
 
+/// One file an [`apply`] wrote.
+#[derive(Debug, Clone)]
+struct Written {
+    path: String,
+    /// The bytes before the write; `None` when the file did not exist.
+    original: Option<Vec<u8>>,
+    /// The bytes the agent wrote.
+    wrote: Vec<u8>,
+}
+
 /// Originals of applied files, for rollback.
 #[derive(Debug, Default)]
 pub struct Applied {
-    originals: Vec<(String, Option<String>)>,
+    written: Vec<Written>,
     /// Files whose contents actually changed.
     pub changed: Vec<String>,
 }
 
+impl Applied {
+    /// Per changed file: `(path, existed before, sha256 before, sha256 after)`.
+    pub fn digests(&self) -> Vec<(String, bool, Option<String>, String)> {
+        use agent_core::appport::knowledge::rules::sha256_bytes_hex;
+        self.written
+            .iter()
+            .map(|w| {
+                (
+                    w.path.clone(),
+                    w.original.is_some(),
+                    w.original.as_deref().map(sha256_bytes_hex),
+                    sha256_bytes_hex(&w.wrote),
+                )
+            })
+            .collect()
+    }
+
+    /// The original text of each changed file that existed (for a recovery record).
+    pub fn originals(&self) -> Vec<(String, Option<String>)> {
+        self.written
+            .iter()
+            .map(|w| (w.path.clone(), w.original.as_ref().map(|b| String::from_utf8_lossy(b).into_owned())))
+            .collect()
+    }
+}
+
+/// What a rollback did, file by file. A rollback is only reported as done when
+/// every file was checked after it was restored.
+#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+#[must_use = "a rollback is only done when it is checked"]
+pub struct Rollback {
+    /// Restored, and checked to hold the original bytes (or to be absent again).
+    pub restored: Vec<String>,
+    /// Not touched: the file changed after the agent wrote it, so restoring it
+    /// would overwrite someone else's work.
+    pub modified_since: Vec<String>,
+    /// Could not be restored, or did not check out after restoring.
+    pub failed: Vec<String>,
+}
+
+impl Rollback {
+    /// Every file is back as it was.
+    pub fn verified(&self) -> bool {
+        self.modified_since.is_empty() && self.failed.is_empty()
+    }
+
+    pub fn describe(&self) -> String {
+        let mut parts = Vec::new();
+        if !self.restored.is_empty() {
+            parts.push(format!("restored and checked: {}", self.restored.join(", ")));
+        }
+        if !self.modified_since.is_empty() {
+            parts.push(format!(
+                "left alone because they changed after the agent wrote them: {}",
+                self.modified_since.join(", ")
+            ));
+        }
+        if !self.failed.is_empty() {
+            parts.push(format!("NOT restored: {}", self.failed.join("; ")));
+        }
+        parts.join("; ")
+    }
+}
+
+/// Writes `bytes` to `path` through a temporary file in the same directory and
+/// a rename, so the file is never left half-written.
+fn write_atomic(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
+    let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+    let temp = path.with_file_name(format!(".{name}.appport-agent-{}.tmp", std::process::id()));
+    let result = fs::write(&temp, bytes).and_then(|_| {
+        if let Ok(meta) = fs::metadata(path) {
+            let _ = fs::set_permissions(&temp, meta.permissions());
+        }
+        fs::rename(&temp, path)
+    });
+    if result.is_err() {
+        let _ = fs::remove_file(&temp);
+    }
+    result
+}
+
+/// Reads the current bytes of a file: `Ok(None)` when it does not exist.
+fn current(path: &Path) -> std::io::Result<Option<Vec<u8>>> {
+    match fs::read(path) {
+        Ok(bytes) => Ok(Some(bytes)),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(e) => Err(e),
+    }
+}
+
+/// Why an [`apply`] failed.
+#[derive(Debug, Clone)]
+pub struct ApplyError {
+    pub message: String,
+    /// When some files had been written: the rollback of those writes.
+    pub rollback: Option<Rollback>,
+}
+
+impl std::fmt::Display for ApplyError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.message)?;
+        if let Some(r) = &self.rollback {
+            write!(f, " (earlier writes: {})", r.describe())?;
+        }
+        Ok(())
+    }
+}
+
+impl From<ApplyError> for String {
+    fn from(e: ApplyError) -> String {
+        e.to_string()
+    }
+}
+
 /// Writes the edits under `root`. Callers check the boundary first.
-pub fn apply(root: &Path, edits: &[FileEdit]) -> Result<Applied, String> {
-    let mut applied = Applied::default();
-    for (edit, path) in edits.iter().zip(targets(edits)?) {
-        let full = root.join(&path);
-        let original = fs::read_to_string(&full).ok();
-        if original.as_deref() == Some(edit.contents.as_str()) {
+///
+/// Every target is checked before anything is written: it must stay inside the
+/// root without passing through a symbolic link, must be a regular file if it
+/// exists, and must be readable (so it can be restored exactly). If a write
+/// fails part-way, what was written is rolled back, and the error says whether
+/// that rollback checked out.
+pub fn apply(root: &Path, edits: &[FileEdit]) -> Result<Applied, ApplyError> {
+    let refuse = |message: String| ApplyError { message, rollback: None };
+    let mut planned = Vec::new();
+    for (edit, path) in edits.iter().zip(targets(edits).map_err(refuse)?) {
+        let full = inside(root, &path).map_err(|e| refuse(format!("not written: {e}")))?;
+        if let Ok(meta) = fs::symlink_metadata(&full) {
+            if !meta.file_type().is_file() {
+                return Err(refuse(format!("not written: {path} exists and is not a regular file")));
+            }
+        }
+        let original =
+            current(&full).map_err(|e| refuse(format!("not written: {path} cannot be read to keep a copy: {e}")))?;
+        if original.as_deref() == Some(edit.contents.as_bytes()) {
             continue;
         }
+        planned.push((path, full, original, edit.contents.clone().into_bytes()));
+    }
+    let mut applied = Applied::default();
+    for (path, full, original, bytes) in planned {
         if let Some(parent) = full.parent() {
-            fs::create_dir_all(parent).map_err(|e| format!("{path}: {e}"))?;
+            if let Err(e) = fs::create_dir_all(parent) {
+                let rollback = (!applied.written.is_empty()).then(|| rollback(root, applied));
+                return Err(ApplyError { message: format!("{path}: {e}"), rollback });
+            }
         }
-        applied.originals.push((path.clone(), original));
-        if let Err(e) = fs::write(&full, &edit.contents) {
-            rollback(root, applied);
-            return Err(format!("{path}: {e}"));
+        if let Err(e) = write_atomic(&full, &bytes) {
+            let rollback = (!applied.written.is_empty()).then(|| rollback(root, applied));
+            return Err(ApplyError { message: format!("{path}: {e}"), rollback });
         }
+        applied.written.push(Written { path: path.clone(), original, wrote: bytes });
         applied.changed.push(path);
     }
     Ok(applied)
 }
 
-/// Restores every file an [`apply`] changed.
-pub fn rollback(root: &Path, applied: Applied) {
-    for (path, original) in applied.originals.into_iter().rev() {
-        let full = root.join(&path);
-        let _ = match original {
-            Some(text) => fs::write(&full, text),
+/// Restores every file an [`apply`] changed, newest first, and checks each one.
+/// A file that no longer holds what the agent wrote is left alone and reported.
+pub fn rollback(root: &Path, applied: Applied) -> Rollback {
+    let mut result = Rollback::default();
+    for w in applied.written.into_iter().rev() {
+        let full = match inside(root, &w.path) {
+            Ok(full) => full,
+            Err(e) => {
+                result.failed.push(format!("{}: {e}", w.path));
+                continue;
+            }
+        };
+        match current(&full) {
+            Ok(Some(now)) if now == w.wrote => {}
+            Ok(_) => {
+                result.modified_since.push(w.path);
+                continue;
+            }
+            Err(e) => {
+                result.failed.push(format!("{}: {e}", w.path));
+                continue;
+            }
+        }
+        let restored = match &w.original {
+            Some(bytes) => write_atomic(&full, bytes),
             None => fs::remove_file(&full),
         };
+        match (restored, current(&full)) {
+            (Ok(()), Ok(now)) if now == w.original => result.restored.push(w.path),
+            (Err(e), _) => result.failed.push(format!("{}: {e}", w.path)),
+            (_, Err(e)) => result.failed.push(format!("{}: {e}", w.path)),
+            (Ok(()), Ok(_)) => {
+                result.failed.push(format!("{}: does not hold its original contents after restoring", w.path))
+            }
+        }
     }
+    result
 }
 
 #[cfg(test)]
@@ -168,9 +341,76 @@ mod tests {
         let applied = apply(&dir, &edits).unwrap();
         assert_eq!(applied.changed, ["src/a.mjs", "src/b.mjs"]);
         assert_eq!(fs::read_to_string(dir.join("src/a.mjs")).unwrap(), "new\n");
-        rollback(&dir, applied);
+        let undone = rollback(&dir, applied);
+        assert!(undone.verified(), "{undone:?}");
+        assert_eq!(undone.restored, ["src/b.mjs", "src/a.mjs"]);
         assert_eq!(fs::read_to_string(dir.join("src/a.mjs")).unwrap(), "old\n");
         assert!(!dir.join("src/b.mjs").exists());
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    fn scratch(name: &str) -> std::path::PathBuf {
+        let dir = std::env::temp_dir().join(format!("appport-agent-edit-{name}-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(dir.join("src")).unwrap();
+        dir
+    }
+
+    #[test]
+    fn restores_bytes_exactly_even_when_they_are_not_utf8() {
+        let dir = scratch("bytes");
+        let original = vec![0x63, 0x61, 0x66, 0xe9, 0x0a]; // "café" in Latin-1
+        fs::write(dir.join("src/a.mjs"), &original).unwrap();
+        let applied = apply(&dir, &[FileEdit { path: "src/a.mjs".into(), contents: "new\n".into() }]).unwrap();
+        assert!(rollback(&dir, applied).verified());
+        assert_eq!(fs::read(dir.join("src/a.mjs")).unwrap(), original, "restored, not deleted");
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn never_overwrites_a_file_changed_after_the_agent_wrote_it() {
+        let dir = scratch("concurrent");
+        fs::write(dir.join("src/a.mjs"), "old\n").unwrap();
+        let applied = apply(&dir, &[FileEdit { path: "src/a.mjs".into(), contents: "agent\n".into() }]).unwrap();
+        fs::write(dir.join("src/a.mjs"), "the user's edit\n").unwrap();
+        let undone = rollback(&dir, applied);
+        assert!(!undone.verified());
+        assert_eq!(undone.modified_since, ["src/a.mjs"]);
+        assert_eq!(fs::read_to_string(dir.join("src/a.mjs")).unwrap(), "the user's edit\n");
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn never_writes_through_a_symbolic_link() {
+        let dir = scratch("link");
+        let outside = dir.with_extension("outside");
+        fs::create_dir_all(&outside).unwrap();
+        fs::write(outside.join("target.mjs"), "outside\n").unwrap();
+        std::os::unix::fs::symlink(outside.join("target.mjs"), dir.join("src/a.mjs")).unwrap();
+        std::os::unix::fs::symlink(&outside, dir.join("linked")).unwrap();
+        for path in ["src/a.mjs", "linked/target.mjs", "linked/new.mjs"] {
+            let error = apply(&dir, &[FileEdit { path: path.into(), contents: "agent\n".into() }]).unwrap_err();
+            assert!(error.message.contains("symbolic link"), "{path}: {error}");
+            assert!(error.rollback.is_none(), "nothing was written");
+        }
+        assert_eq!(fs::read_to_string(outside.join("target.mjs")).unwrap(), "outside\n");
+        assert!(!outside.join("new.mjs").exists());
+        fs::remove_dir_all(dir).unwrap();
+        fs::remove_dir_all(outside).unwrap();
+    }
+
+    #[test]
+    fn checks_every_target_before_writing_any() {
+        let dir = scratch("precheck");
+        fs::write(dir.join("src/a.mjs"), "old\n").unwrap();
+        fs::create_dir_all(dir.join("src/dir.mjs")).unwrap();
+        let edits = [
+            FileEdit { path: "src/a.mjs".into(), contents: "new\n".into() },
+            FileEdit { path: "src/dir.mjs".into(), contents: "x\n".into() },
+        ];
+        assert!(apply(&dir, &edits).unwrap_err().message.contains("not a regular file"));
+        assert_eq!(fs::read_to_string(dir.join("src/a.mjs")).unwrap(), "old\n", "nothing was written");
         fs::remove_dir_all(dir).unwrap();
     }
 }

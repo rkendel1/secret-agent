@@ -37,6 +37,7 @@ pub struct Log {
     start: Instant,
     file: Option<File>,
     quiet: bool,
+    secrets: Vec<String>,
 }
 
 impl Log {
@@ -50,7 +51,13 @@ impl Log {
             }
             None => None,
         };
-        Ok(Log { start: Instant::now(), file, quiet })
+        Ok(Log { start: Instant::now(), file, quiet, secrets: Vec::new() })
+    }
+
+    /// Redacts these values from everything logged from now on.
+    pub fn redacting(mut self, secrets: Vec<String>) -> Log {
+        self.secrets = secrets;
+        self
     }
 
     pub fn elapsed_ms(&self) -> u128 {
@@ -64,10 +71,10 @@ impl Log {
             if let (Value::Object(record), Value::Object(data)) = (&mut record, data) {
                 record.extend(data);
             }
-            let _ = writeln!(file, "{record}");
+            let _ = writeln!(file, "{}", agent_model::gateway::redact(&record.to_string(), &self.secrets));
         }
         if !self.quiet && !human.as_ref().is_empty() {
-            for line in human.as_ref().lines() {
+            for line in agent_model::gateway::redact(human.as_ref(), &self.secrets).lines() {
                 eprintln!("[{:>6} ms] {kind:<12} {line}", self.start.elapsed().as_millis());
             }
         }
@@ -92,8 +99,15 @@ pub struct Attempt {
     /// Outcome of each declared verification the candidate ran, e.g. `customers.register@1: verified`.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub evidence: Vec<String>,
-    /// Whether the change was undone after rejection.
+    /// Whether the change was undone after rejection, and every file was
+    /// checked to hold its original contents again.
     pub rolled_back: bool,
+    /// The rollback, file by file, when one was attempted.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rollback: Option<crate::edit::Rollback>,
+    /// The goal check on this candidate, when one ran: `None` passed.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub goal_check: Option<GoalCheckRun>,
     /// Why the model stopped (`end_turn`, `max_tokens`, …), when reported.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub stop_reason: Option<String>,
@@ -150,6 +164,53 @@ pub struct Totals {
     pub wall_ms: u64,
 }
 
+/// One run of a goal check.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GoalCheckRun {
+    pub passed: bool,
+    pub detail: String,
+}
+
+/// What shows that the accepted change achieved what was asked.
+#[derive(Debug, Clone, Default, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GoalEvidence {
+    /// Whether acceptance required evidence of the goal (the `run` command
+    /// does unless `--accept-preserving`; the evaluation harnesses score the
+    /// goal with their own oracle instead).
+    pub required: bool,
+    /// `goal-check` (a supplied check failed before the change and passes
+    /// after it), `declared-verification` (verification the contract declares
+    /// failed before the change and passes after it), or `none`.
+    pub method: String,
+    pub detail: String,
+}
+
+/// A change written to the project and not yet accepted or undone. Written to
+/// the report before the changed application runs, so a run that dies at that
+/// point leaves a record of what it changed and how to put it back.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct InFlight {
+    pub attempt: u32,
+    pub files: Vec<InFlightFile>,
+}
+
+/// One file of an [`InFlight`] change.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct InFlightFile {
+    pub path: String,
+    pub existed_before: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sha256_before: Option<String>,
+    pub sha256_written: String,
+    /// The original contents, to restore by hand (absent for a new file).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub original: Option<String>,
+}
+
 /// The run report.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -160,8 +221,23 @@ pub struct RunReport {
     pub project: String,
     pub application: String,
     pub model: String,
-    /// `accepted`, or `rejected` when no attempt passed every check.
+    /// - `accepted`: a change passed every check (and the goal evidence, when required) and was kept;
+    /// - `rejected`: no attempt passed; every attempt was undone and checked;
+    /// - `limitation`: the agent declined before changing anything (see `reason`);
+    /// - `provider-error`: the model provider failed; nothing is left applied;
+    /// - `harness-error`: the agent itself failed (see `reason`);
+    /// - `rollback-failed`: a rejected change could not be undone and checked; see `projectState`;
+    /// - `interrupted`: written while a change is applied and being checked. A
+    ///   report still saying this after the process ended means the run died
+    ///   there; `inFlight` lists what it had changed.
     pub outcome: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reason: Option<String>,
+    /// `unchanged`, `changed` (the accepted files), or `uncertain` (see `reason`).
+    pub project_state: String,
+    pub goal: GoalEvidence,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub in_flight: Option<InFlight>,
     /// Checks the unchanged application already failed: why the change was needed.
     pub baseline_failures: Vec<String>,
     pub attempts: Vec<Attempt>,

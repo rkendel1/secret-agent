@@ -98,6 +98,9 @@ pub struct Response {
     /// The provider's own content for this turn, to replay in a later [`Turn`].
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub raw: Option<serde_json::Value>,
+    /// Requests retried before this answer (rate limits, server errors).
+    #[serde(default)]
+    pub retries: u32,
 }
 
 /// Why a model call failed.

@@ -9,6 +9,10 @@ on:
     - cron: "17 6 * * *"
   workflow_dispatch:
 
+# No secrets and no live inference: every job is deterministic.
+permissions:
+  contents: read
+
 jobs:
   rust:
     runs-on: ubuntu-latest
