@@ -1,0 +1,9 @@
+{
+  "id": "unverifiable-contract",
+  "expect": "limitation",
+  "category": "verification cannot establish the outcome (the contract declares no effects or verification)",
+  "project": "fixtures/appport-projects/customers-undeclared",
+  "goal": "Read customers from the application's customer store instead of the legacy CRM export.",
+  "target": "customers.lookup@1",
+  "oracleTarget": null
+}

@@ -1,0 +1,3 @@
+=== ACTION: limitation ===
+{"reason": "the agent cannot verify a change to customers.lookup@1: the contract declares no effects or verification"}
+=== END ACTION ===

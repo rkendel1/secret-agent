@@ -252,11 +252,7 @@ pub fn run_coding(options: &CodingOptions) -> Result<CodingReport, String> {
             json!({ "attempt": attempt, "task": &task_text }),
             format!("attempt {attempt}: asking for the change"),
         );
-        let request = Request {
-            system: task_text.system.clone(),
-            prompt: task_text.prompt.clone(),
-            max_tokens: options.model.max_tokens,
-        };
+        let request = Request::new(task_text.system.clone(), task_text.prompt.clone(), options.model.max_tokens);
         let response = model.complete(&request).map_err(|e| e.to_string())?;
         log.event(
             "model",

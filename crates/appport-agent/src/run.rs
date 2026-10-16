@@ -195,8 +195,7 @@ pub fn run(options: &RunOptions) -> Result<RunReport, String> {
                 if feedback.is_empty() { String::new() } else { format!(", {} violation(s) to fix", feedback.len()) }
             ),
         );
-        let request =
-            Request { system: task.system.clone(), prompt: task.prompt.clone(), max_tokens: options.model.max_tokens };
+        let request = Request::new(task.system.clone(), task.prompt.clone(), options.model.max_tokens);
         let response = model.complete(&request).map_err(|e| e.to_string())?;
         log.event(
             "model",

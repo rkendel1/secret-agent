@@ -1,0 +1,3 @@
+=== ACTION: list_capabilities ===
+{}
+=== END ACTION ===

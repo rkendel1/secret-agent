@@ -1,0 +1,9 @@
+{
+  "id": "missing-capability",
+  "expect": "limitation",
+  "category": "missing capability",
+  "project": "examples/customers-app",
+  "goal": "Staff need to be able to delete a customer record through the application.",
+  "target": null,
+  "oracleTarget": null
+}

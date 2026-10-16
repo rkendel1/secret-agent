@@ -1,0 +1,9 @@
+{
+  "id": "discover-readback",
+  "expect": "verified-change",
+  "category": "capability discovery and selection",
+  "project": "examples/customers-app",
+  "goal": "A customer who has just been registered cannot be read back through the application. Find the capability responsible and fix its implementation, without changing any contract.",
+  "target": null,
+  "oracleTarget": "customers.lookup@1"
+}

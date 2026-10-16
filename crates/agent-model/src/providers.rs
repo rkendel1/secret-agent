@@ -7,7 +7,37 @@ use serde_json::{json, Value};
 use ureq::tls::{RootCerts, TlsConfig};
 use ureq::Agent;
 
-use crate::{Model, ModelConfig, ModelError, Provider, Request, Response, Usage};
+use crate::{Model, ModelConfig, ModelError, Provider, Request, Response, Role, Usage};
+
+fn role(role: Role) -> &'static str {
+    match role {
+        Role::User => "user",
+        Role::Assistant => "assistant",
+    }
+}
+
+fn openai_messages(request: &Request) -> Value {
+    let mut messages = vec![json!({ "role": "system", "content": request.system })];
+    for turn in &request.history {
+        messages.push(json!({ "role": role(turn.role), "content": turn.text }));
+    }
+    messages.push(json!({ "role": "user", "content": request.prompt }));
+    Value::Array(messages)
+}
+
+/// Assistant turns replay their content blocks unchanged (thinking included).
+fn anthropic_messages(request: &Request) -> Value {
+    let mut messages: Vec<Value> = request
+        .history
+        .iter()
+        .map(|turn| match (&turn.raw, turn.role) {
+            (Some(raw), Role::Assistant) => json!({ "role": "assistant", "content": raw }),
+            _ => json!({ "role": role(turn.role), "content": turn.text }),
+        })
+        .collect();
+    messages.push(json!({ "role": "user", "content": request.prompt }));
+    Value::Array(messages)
+}
 
 /// Builds the model a configuration describes.
 pub fn connect(config: &ModelConfig) -> Result<Box<dyn Model>, ModelError> {
@@ -94,10 +124,7 @@ impl Model for OpenAiCompatibleModel {
         let mut body = json!({
             "model": self.model,
             "max_tokens": request.max_tokens.min(self.max_tokens),
-            "messages": [
-                { "role": "system", "content": request.system },
-                { "role": "user", "content": request.prompt }
-            ]
+            "messages": openai_messages(request)
         });
         if let Some(t) = self.temperature {
             body["temperature"] = json!(t);
@@ -119,7 +146,8 @@ impl Model for OpenAiCompatibleModel {
         };
         let model = answer.get("model").and_then(Value::as_str).unwrap_or(&self.model).to_string();
         let stop_reason = answer.pointer("/choices/0/finish_reason").and_then(Value::as_str).map(str::to_string);
-        Ok(Response { text, usage, model, stop_reason })
+        let raw = None;
+        Ok(Response { text, usage, model, stop_reason, raw })
     }
 }
 
@@ -163,7 +191,7 @@ impl Model for AnthropicModel {
             "model": self.model,
             "max_tokens": request.max_tokens.min(self.max_tokens),
             "system": request.system,
-            "messages": [{ "role": "user", "content": request.prompt }]
+            "messages": anthropic_messages(request)
         });
         if let Some(t) = self.temperature {
             body["temperature"] = json!(t);
@@ -184,6 +212,7 @@ impl Model for AnthropicModel {
                 answer.pointer("/stop_details/category").unwrap_or(&Value::Null)
             )));
         }
+        let raw = answer.get("content").cloned();
         let text: String = answer
             .get("content")
             .and_then(Value::as_array)
@@ -198,7 +227,7 @@ impl Model for AnthropicModel {
             estimated: answer.get("usage").is_none(),
         };
         let model = answer.get("model").and_then(Value::as_str).unwrap_or(&self.model).to_string();
-        Ok(Response { text, usage, model, stop_reason })
+        Ok(Response { text, usage, model, stop_reason, raw })
     }
 }
 
@@ -258,7 +287,7 @@ impl Model for CommandModel {
             return Err(ModelError::Transport(format!("{} exited with {status}", self.command[0])));
         }
         let usage = Usage::estimate(&format!("{}{}", request.system, request.prompt), &text);
-        Ok(Response { text, usage, model: self.command[0].clone(), stop_reason: None })
+        Ok(Response { text, usage, model: self.command[0].clone(), stop_reason: None, raw: None })
     }
 }
 
@@ -305,6 +334,6 @@ impl Model for ScriptedModel {
             std::fs::read_to_string(path).map_err(|e| ModelError::Transport(format!("{}: {e}", path.display())))?;
         let usage = Usage::estimate(&format!("{}{}", request.system, request.prompt), &text);
         let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
-        Ok(Response { text, usage, model: format!("scripted/{name}"), stop_reason: None })
+        Ok(Response { text, usage, model: format!("scripted/{name}"), stop_reason: None, raw: None })
     }
 }
