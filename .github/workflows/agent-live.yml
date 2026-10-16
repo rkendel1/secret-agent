@@ -1,95 +1,95 @@
 name: agent-live
 
-# The closed-loop evaluation with real models: the same intents, knowledge vs
-# bare context, judged by the same deterministic verifier. Manual, because it
-# downloads a model and takes a while; results are uploaded as artifacts.
+# Live-model evaluations through the Vercel AI Gateway, with a free model only.
+#
+# Manual (workflow_dispatch) only: no push or pull request runs live inference.
+# Every run starts with the Rust preflight (`appport-agent preflight`): the model
+# must be on the free allowlist, priced at zero by the gateway catalog, and
+# answer one minimal completion. If it fails, no leg runs and the workflow fails.
+# There is no Anthropic API path and no paid-model fallback. AI_GATEWAY_API_KEY
+# is passed only to the steps that call the gateway.
 on:
   workflow_dispatch:
     inputs:
+      mode:
+        description: preflight (checks only), smoke (two tasks, one trial, every arm) or comparison (every task)
+        type: choice
+        options: [smoke, preflight, comparison]
+        default: smoke
+      confirm_comparison:
+        description: Required for mode=comparison (the long run)
+        type: boolean
+        default: false
       legs:
-        description: Which legs to run (comma-separated) - gateway, coding, arms, remote
-        default: gateway
-      trials:
-        description: Trials per arm and project
-        default: "10"
+        description: Which legs to run (comma-separated) - arms, gateway, coding
+        default: arms
       gateway_model:
-        description: Vercel AI Gateway model for the gateway, coding and arms legs (needs the AI_GATEWAY_API_KEY secret); a cheap model by default
-        default: anthropic/claude-haiku-5.5
+        description: Free Vercel AI Gateway model (must be on the allowlist in crates/agent-model/src/gateway.rs)
+        default: nvidia/nemotron-3.5-lightning-free
+      trials:
+        description: Trials per arm and task (comparison only; smoke runs one)
+        default: "5"
+      max_model_calls:
+        description: Arms leg - never start a trial that could exceed this many model calls
+        default: "600"
+      max_minutes:
+        description: Arms leg - stop starting trials after this many minutes
+        default: "100"
       min_success:
         description: Coding leg - fail when the observed arm's success rate is below this (0..1)
-        default: "0.5"
-      budget_usd:
-        description: Arms leg - stop starting trials once measured spend reaches this (USD)
-        default: "10"
-      remote_model:
-        description: Anthropic model for the remote leg (needs the ANTHROPIC_API_KEY secret)
-        default: claude-opus-5-5
+        default: "0"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: agent-live
+  cancel-in-progress: false
+
+env:
+  MODEL: ${{ inputs.gateway_model }}
+  CONFIG: examples/models/vercel-gateway.json
 
 jobs:
-  remote:
-    if: contains(inputs.legs, 'remote')
+  preflight:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
-    env:
-      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-      # Only for keys not scoped to a workspace.
-      ANTHROPIC_WORKSPACE_ID: ${{ secrets.ANTHROPIC_WORKSPACE_ID }}
+    timeout-minutes: 20
     steps:
-      - name: Require the key
-        run: test -n "$ANTHROPIC_API_KEY" || { echo "set the ANTHROPIC_API_KEY repository secret"; exit 1; }
+      - name: Comparison needs confirmation
+        if: inputs.mode == 'comparison' && !inputs.confirm_comparison
+        run: |
+          echo "::error::mode=comparison runs every task with ${{ inputs.trials }} trials per arm; tick confirm_comparison to run it"
+          exit 1
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - run: npm ci --prefix examples/customers-app --no-audit --no-fund
-      - run: TRIALS="${{ inputs.trials }}" scripts/closed-loop-test.sh --config examples/models/anthropic.json --model "${{ inputs.remote_model }}"
+      - run: cargo build --quiet -p appport-agent
+      - name: Preflight (allowlist, catalog pricing, one minimal completion)
+        env:
+          AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
+        run: |
+          set -o pipefail
+          target/debug/appport-agent preflight --config "$CONFIG" --model "$MODEL" --out target/preflight \
+            | tee -a "$GITHUB_STEP_SUMMARY"
       - if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: eval-remote
-          path: target/closed-loop
+          name: preflight
+          path: target/preflight
+          if-no-files-found: ignore
 
-  gateway:
-    # The same evaluation through the Vercel AI Gateway (OpenAI-compatible API).
-    if: contains(inputs.legs, 'gateway')
+  arms:
+    # Bare vs context-assisted vs AppPort-native (docs/three-arm-eval.md).
+    needs: preflight
+    if: inputs.mode != 'preflight' && contains(inputs.legs, 'arms')
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
-      AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
-      MODEL: ${{ inputs.gateway_model || 'anthropic/claude-haiku-5.5' }}
-      TRIALS: ${{ inputs.trials || '10' }}
+      MODE: ${{ inputs.mode }}
+      TRIALS: ${{ inputs.trials }}
+      MAX_CALLS: ${{ inputs.max_model_calls }}
+      MAX_MINUTES: ${{ inputs.max_minutes }}
     steps:
-      - name: Require the key
-        run: test -n "$AI_GATEWAY_API_KEY" || { echo "set the AI_GATEWAY_API_KEY repository secret"; exit 1; }
-      - name: Check the model exists on the gateway
-        run: |
-          curl -fsS https://ai-gateway.vercel.sh/v1/models -H "Authorization: Bearer $AI_GATEWAY_API_KEY" > models.json
-          echo "Anthropic models on the gateway:"; jq -r '.data[].id' models.json | grep -i anthropic || true
-          if jq -e --arg m "$MODEL" '.data | any(.id == $m)' models.json > /dev/null; then
-            echo "using $MODEL"
-          else
-            # The gateway may spell versions differently (5.5 vs 5-5). Accept exactly one
-            # spelling of the requested family/version; anything else stops before any spend.
-            family=$(echo "$MODEL" | sed -E 's#^.*/##; s#[.-]#[.-]#g')
-            matches=$(jq -r '.data[].id' models.json | grep -E "^anthropic/${family}$" || true)
-            if [ "$(echo "$matches" | grep -c .)" = 1 ]; then
-              echo "using $matches (requested $MODEL)"; echo "MODEL=$matches" >> "$GITHUB_ENV"
-            else
-              echo "model $MODEL is not offered by the gateway (candidates: ${matches:-none})"; exit 1
-            fi
-          fi
-      - name: Check the model answers (one 1-token call, before any trial)
-        run: |
-          status=$(curl -sS -o probe.json -w '%{http_code}' https://ai-gateway.vercel.sh/v1/chat/completions \
-            -H "Authorization: Bearer $AI_GATEWAY_API_KEY" -H "Content-Type: application/json" \
-            -d "{\"model\": \"$MODEL\", \"max_tokens\": 1, \"messages\": [{\"role\": \"user\", \"content\": \"ok\"}]}")
-          if [ "$status" != 200 ]; then
-            echo "::error::$MODEL is not usable with this AI_GATEWAY_API_KEY (HTTP $status): $(head -c 400 probe.json)"
-            exit 1
-          fi
-          echo "$MODEL answers"
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
@@ -97,16 +97,69 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: npm ci --prefix examples/customers-app --no-audit --no-fund
-      - run: scripts/closed-loop-test.sh --config examples/models/vercel-gateway.json --model "$MODEL"
+      - run: cargo build --quiet -p appport-agent
+      - name: Three-arm evaluation (preflight again, then trials)
+        env:
+          AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
+        run: |
+          target/debug/appport-agent arm-eval --tasks fixtures/appport-tasks --free-gateway --mode "$MODE" \
+            --config "$CONFIG" --model "$MODEL" --trials "$TRIALS" --arms A,B,C \
+            --max-model-calls "$MAX_CALLS" --max-minutes "$MAX_MINUTES" --out target/arms-live --quiet
       - name: Results
         if: always()
         run: |
-          for f in target/closed-loop/eval-*/eval.md; do echo "=== $f"; cat "$f"; cat "$f" >> "$GITHUB_STEP_SUMMARY"; done
+          for f in target/arms-live/preflight.txt target/arms-live/arm-eval.md; do
+            [ -f "$f" ] && { cat "$f"; cat "$f" >> "$GITHUB_STEP_SUMMARY"; }
+          done
+          true
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-arms
+          if-no-files-found: ignore
+          path: |
+            target/arms-live/preflight.*
+            target/arms-live/arm-eval.*
+            target/arms-live/*/*/trial.json
+            target/arms-live/*/*/report.json
+            target/arms-live/*/*/run.jsonl
+            target/arms-live/*/*/oracle.json
+
+  gateway:
+    # The closed-loop evaluation (knowledge vs bare context).
+    needs: preflight
+    if: inputs.mode != 'preflight' && contains(inputs.legs, 'gateway')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      TRIALS: ${{ inputs.mode == 'comparison' && inputs.trials || '1' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: npm ci --prefix examples/customers-app --no-audit --no-fund
+      - run: cargo build --quiet -p appport-agent
+      - name: Closed-loop evaluation (preflight again, then trials)
+        env:
+          AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
+        run: |
+          target/debug/appport-agent preflight --config "$CONFIG" --model "$MODEL" --out target/closed-loop/preflight
+          scripts/closed-loop-test.sh --config "$CONFIG" --model "$MODEL"
+      - name: Results
+        if: always()
+        run: |
+          for f in target/closed-loop/eval-*/eval.md; do [ -f "$f" ] && { echo "=== $f"; cat "$f"; cat "$f" >> "$GITHUB_STEP_SUMMARY"; }; done
+          true
       - if: always()
         uses: actions/upload-artifact@v4
         with:
           name: eval-gateway
+          if-no-files-found: ignore
           path: |
+            target/closed-loop/preflight
             target/closed-loop/eval-*/eval.json
             target/closed-loop/eval-*/eval.md
             target/closed-loop/eval-*/*/report.json
@@ -114,55 +167,29 @@ jobs:
             target/closed-loop/eval-*/*/accepted.diff
 
   coding:
-    # The coding-agent evaluation (no AppPort) through the Vercel AI Gateway.
-    if: contains(inputs.legs, 'coding')
+    # The coding-agent evaluation (no AppPort).
+    needs: preflight
+    if: inputs.mode != 'preflight' && contains(inputs.legs, 'coding')
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
-      AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
-      MODEL: ${{ inputs.gateway_model || 'anthropic/claude-haiku-5.5' }}
-      TRIALS: ${{ inputs.trials || '10' }}
-      MIN_SUCCESS: ${{ inputs.min_success || '0.5' }}
+      TRIALS: ${{ inputs.mode == 'comparison' && inputs.trials || '1' }}
+      MIN_SUCCESS: ${{ inputs.min_success }}
     steps:
       - uses: actions/checkout@v4
-      - name: Require the key
-        run: test -n "$AI_GATEWAY_API_KEY" || { echo "set the AI_GATEWAY_API_KEY repository secret"; exit 1; }
-      - name: Check the model exists on the gateway
-        run: |
-          curl -fsS https://ai-gateway.vercel.sh/v1/models -H "Authorization: Bearer $AI_GATEWAY_API_KEY" > models.json
-          echo "Anthropic models on the gateway:"; jq -r '.data[].id' models.json | grep -i anthropic || true
-          if jq -e --arg m "$MODEL" '.data | any(.id == $m)' models.json > /dev/null; then
-            echo "using $MODEL"
-          else
-            # The gateway may spell versions differently (5.5 vs 5-5). Accept exactly one
-            # spelling of the requested family/version; anything else stops before any spend.
-            family=$(echo "$MODEL" | sed -E 's#^.*/##; s#[.-]#[.-]#g')
-            matches=$(jq -r '.data[].id' models.json | grep -E "^anthropic/${family}$" || true)
-            if [ "$(echo "$matches" | grep -c .)" = 1 ]; then
-              echo "using $matches (requested $MODEL)"; echo "MODEL=$matches" >> "$GITHUB_ENV"
-            else
-              echo "model $MODEL is not offered by the gateway (candidates: ${matches:-none})"; exit 1
-            fi
-          fi
-      - name: Check the model answers (one 1-token call, before any trial)
-        run: |
-          status=$(curl -sS -o probe.json -w '%{http_code}' https://ai-gateway.vercel.sh/v1/chat/completions \
-            -H "Authorization: Bearer $AI_GATEWAY_API_KEY" -H "Content-Type: application/json" \
-            -d "{\"model\": \"$MODEL\", \"max_tokens\": 1, \"messages\": [{\"role\": \"user\", \"content\": \"ok\"}]}")
-          if [ "$status" != 200 ]; then
-            echo "::error::$MODEL is not usable with this AI_GATEWAY_API_KEY (HTTP $status): $(head -c 400 probe.json)"
-            exit 1
-          fi
-          echo "$MODEL answers"
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: scripts/check-coding-fixtures.sh
-      - run: |
-          cargo run --quiet -p appport-agent -- code-eval --tasks fixtures/coding \
-            --config examples/models/vercel-gateway.json --model "$MODEL" \
+      - run: cargo build --quiet -p appport-agent
+      - name: Coding evaluation (preflight again, then trials)
+        env:
+          AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
+        run: |
+          target/debug/appport-agent preflight --config "$CONFIG" --model "$MODEL" --out target/coding-live/preflight
+          target/debug/appport-agent code-eval --tasks fixtures/coding --config "$CONFIG" --model "$MODEL" \
             --trials "$TRIALS" --arms observed,minimal --out target/coding-live \
             --min-success "$MIN_SUCCESS" --require-test-runs --quiet
       - name: Results
@@ -170,80 +197,16 @@ jobs:
         run: |
           f=target/coding-live/coding-eval.md
           [ -f "$f" ] && { cat "$f"; cat "$f" >> "$GITHUB_STEP_SUMMARY"; }
+          true
       - if: always()
         uses: actions/upload-artifact@v4
         with:
           name: eval-coding
+          if-no-files-found: ignore
           path: |
+            target/coding-live/preflight
             target/coding-live/coding-eval.*
             target/coding-live/*/*/report.json
             target/coding-live/*/*/run.jsonl
             target/coding-live/*/*/accepted.diff
             target/coding-live/*/*/hidden.txt
-
-  arms:
-    # Bare vs context-assisted vs AppPort-native, through the Vercel AI Gateway. Budgeted.
-    if: contains(inputs.legs, 'arms')
-    runs-on: ubuntu-latest
-    timeout-minutes: 120
-    env:
-      AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
-      MODEL: ${{ inputs.gateway_model || 'anthropic/claude-haiku-5.5' }}
-      TRIALS: ${{ inputs.trials || '10' }}
-      BUDGET: ${{ inputs.budget_usd || '10' }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Require the key
-        run: test -n "$AI_GATEWAY_API_KEY" || { echo "set the AI_GATEWAY_API_KEY repository secret"; exit 1; }
-      - name: Check the model exists on the gateway
-        run: |
-          curl -fsS https://ai-gateway.vercel.sh/v1/models -H "Authorization: Bearer $AI_GATEWAY_API_KEY" > models.json
-          echo "Anthropic models on the gateway:"; jq -r '.data[].id' models.json | grep -i anthropic || true
-          if jq -e --arg m "$MODEL" '.data | any(.id == $m)' models.json > /dev/null; then
-            echo "using $MODEL"
-          else
-            # The gateway may spell versions differently (5.5 vs 5-5). Accept exactly one
-            # spelling of the requested family/version; anything else stops before any spend.
-            family=$(echo "$MODEL" | sed -E 's#^.*/##; s#[.-]#[.-]#g')
-            matches=$(jq -r '.data[].id' models.json | grep -E "^anthropic/${family}$" || true)
-            if [ "$(echo "$matches" | grep -c .)" = 1 ]; then
-              echo "using $matches (requested $MODEL)"; echo "MODEL=$matches" >> "$GITHUB_ENV"
-            else
-              echo "model $MODEL is not offered by the gateway (candidates: ${matches:-none})"; exit 1
-            fi
-          fi
-      - name: Check the model answers (one 1-token call, before any trial)
-        run: |
-          status=$(curl -sS -o probe.json -w '%{http_code}' https://ai-gateway.vercel.sh/v1/chat/completions \
-            -H "Authorization: Bearer $AI_GATEWAY_API_KEY" -H "Content-Type: application/json" \
-            -d "{\"model\": \"$MODEL\", \"max_tokens\": 1, \"messages\": [{\"role\": \"user\", \"content\": \"ok\"}]}")
-          if [ "$status" != 200 ]; then
-            echo "::error::$MODEL is not usable with this AI_GATEWAY_API_KEY (HTTP $status): $(head -c 400 probe.json)"
-            exit 1
-          fi
-          echo "$MODEL answers"
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - run: npm ci --prefix examples/customers-app --no-audit --no-fund
-      - run: |
-          cargo run --quiet -p appport-agent -- arm-eval --tasks fixtures/appport-tasks \
-            --config examples/models/vercel-gateway.json --model "$MODEL" \
-            --trials "$TRIALS" --arms A,B,C --budget-usd "$BUDGET" --out target/arms-live --quiet
-      - name: Results
-        if: always()
-        run: |
-          f=target/arms-live/arm-eval.md
-          [ -f "$f" ] && { cat "$f"; cat "$f" >> "$GITHUB_STEP_SUMMARY"; }
-      - if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: eval-arms
-          path: |
-            target/arms-live/arm-eval.*
-            target/arms-live/*/*/trial.json
-            target/arms-live/*/*/report.json
-            target/arms-live/*/*/run.jsonl
-            target/arms-live/*/*/oracle.json

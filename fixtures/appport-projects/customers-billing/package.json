@@ -1,0 +1,14 @@
+{
+  "name": "customers-app",
+  "private": true,
+  "type": "module",
+  "description": "customers-app where billing.contact declares that it reads customer records and depends on no other capability, but is still implemented through the legacy lookup (fixture).",
+  "main": "./src/app.mjs",
+  "dependencies": {
+    "@appport/authorization": "1.0.4",
+    "@appport/core": "1.2.0",
+    "@appport/protocol": "1.1.0",
+    "@appport/schema": "1.1.0",
+    "@appport/server": "1.1.2"
+  }
+}

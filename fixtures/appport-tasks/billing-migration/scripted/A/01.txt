@@ -1,0 +1,9 @@
+=== FILE: src/handlers/billing.contact.mjs ===
+import { lookupCustomer } from "./customers.lookup.mjs";
+
+// Who to send a customer's invoices to.
+export async function billingContact(input, context) {
+  const { customerId, name, email } = await lookupCustomer({ customerId: input.customerId }, context);
+  return { customerId, name, email };
+}
+=== END FILE ===

@@ -360,7 +360,12 @@ fn json_string(s: &str) -> String {
 
 /// Lowercase hex SHA-256 of the UTF-8 bytes.
 pub fn sha256_hex(text: &str) -> String {
-    Sha256::digest(text.as_bytes()).iter().map(|b| format!("{b:02x}")).collect()
+    sha256_bytes_hex(text.as_bytes())
+}
+
+/// Hex SHA-256 of raw bytes.
+pub fn sha256_bytes_hex(bytes: &[u8]) -> String {
+    Sha256::digest(bytes).iter().map(|b| format!("{b:02x}")).collect()
 }
 
 /// `digestOf`: `sha256:` + hex of the canonical JSON.

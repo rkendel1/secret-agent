@@ -1,0 +1,13 @@
+=== FILE: src/handlers/billing.contact.mjs ===
+import { errors } from "@appport/protocol";
+import { getCustomer } from "../store.mjs";
+
+// Who to send a customer's invoices to, read from the customer store.
+export async function billingContact(input) {
+  const customer = getCustomer(input.customerId);
+  if (!customer) {
+    throw errors.notFound(`no customer ${input.customerId}`);
+  }
+  return { customerId: customer.customerId, name: customer.name, email: customer.email };
+}
+=== END FILE ===

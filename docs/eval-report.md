@@ -132,5 +132,5 @@ TRIALS=10 scripts/closed-loop-test.sh --config examples/models/anthropic.json
 # results: target/closed-loop/eval-appport-services/eval.md, target/closed-loop/eval-customers-app/eval.md
 ```
 
-Or run the manual **agent-live** workflow (secrets `ANTHROPIC_API_KEY`, optionally `ANTHROPIC_WORKSPACE_ID`).
+The manual **agent-live** workflow no longer calls Anthropic's API: it runs only a free Vercel AI Gateway model, after a preflight (`legs: gateway`; see [the three-arm evaluation](three-arm-eval.md#live-runs-free-vercel-ai-gateway-model-only)). The results above were produced locally with the Anthropic configuration shown.
 Expect different token counts and wording from run to run; the verifier's decisions are what to compare.

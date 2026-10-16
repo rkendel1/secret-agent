@@ -5,5 +5,43 @@
   "project": "examples/customers-app",
   "goal": "Read customers from the application's customer store instead of the legacy CRM export.",
   "target": "customers.lookup@1",
-  "oracleTarget": "customers.lookup@1"
+  "oracleTarget": "customers.lookup@1",
+  "goalCheck": {
+    "description": "A customer registered through customers.register@1 can be read back through customers.lookup@1 with the registered email.",
+    "steps": [
+      {
+        "capability": "customers.register@1",
+        "input": {
+          "name": "Goal Check",
+          "email": "goal.check@example.com",
+          "tier": "gold"
+        }
+      },
+      {
+        "capability": "customers.lookup@1",
+        "input": {
+          "customerId": {
+            "$step": 0,
+            "at": "/customerId"
+          }
+        },
+        "expect": [
+          {
+            "at": "/email",
+            "equals": {
+              "$step": 0,
+              "input": "/email"
+            }
+          },
+          {
+            "at": "/tier",
+            "equals": {
+              "$step": 0,
+              "input": "/tier"
+            }
+          }
+        ]
+      }
+    ]
+  }
 }

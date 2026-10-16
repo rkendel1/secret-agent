@@ -1,0 +1,3 @@
+=== ACTION: complete ===
+{"summary": "billing.contact reads the customer store"}
+=== END ACTION ===
