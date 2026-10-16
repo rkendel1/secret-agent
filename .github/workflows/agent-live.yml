@@ -6,18 +6,25 @@ name: agent-live
 on:
   workflow_dispatch:
     inputs:
+      legs:
+        description: Which legs to run (comma-separated) - gateway, remote, local
+        default: gateway
       trials:
         description: Trials per arm and project
         default: "10"
       local_model:
         description: Ollama model for the local leg
         default: qwen2.5-coder:7b
+      gateway_model:
+        description: Vercel AI Gateway model for the gateway leg (needs the AI_GATEWAY_API_KEY secret)
+        default: anthropic/claude-opus-5.5
       remote_model:
         description: Anthropic model for the remote leg (needs the ANTHROPIC_API_KEY secret)
         default: claude-opus-5-5
 
 jobs:
   local:
+    if: contains(inputs.legs, 'local')
     runs-on: ubuntu-latest
     timeout-minutes: 300
     steps:
@@ -42,6 +49,7 @@ jobs:
           path: target/closed-loop
 
   remote:
+    if: contains(inputs.legs, 'remote')
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
@@ -64,3 +72,55 @@ jobs:
         with:
           name: eval-remote
           path: target/closed-loop
+
+  gateway:
+    # The same evaluation through the Vercel AI Gateway (OpenAI-compatible API).
+    if: contains(inputs.legs, 'gateway')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
+      MODEL: ${{ inputs.gateway_model || 'anthropic/claude-opus-5.5' }}
+      TRIALS: ${{ inputs.trials || '10' }}
+    steps:
+      - name: Require the key
+        run: test -n "$AI_GATEWAY_API_KEY" || { echo "set the AI_GATEWAY_API_KEY repository secret"; exit 1; }
+      - name: Check the model exists on the gateway
+        run: |
+          curl -fsS https://ai-gateway.vercel.sh/v1/models -H "Authorization: Bearer $AI_GATEWAY_API_KEY" > models.json
+          echo "Anthropic models on the gateway:"; jq -r '.data[].id' models.json | grep -i anthropic || true
+          if jq -e --arg m "$MODEL" '.data | any(.id == $m)' models.json > /dev/null; then
+            echo "using $MODEL"
+          else
+            # The gateway may spell versions differently (5.5 vs 5-5). Accept exactly one
+            # spelling of the requested family/version; anything else stops before any spend.
+            family=$(echo "$MODEL" | sed -E 's#^.*/##; s#[.-]#[.-]#g')
+            matches=$(jq -r '.data[].id' models.json | grep -E "^anthropic/${family}$" || true)
+            if [ "$(echo "$matches" | grep -c .)" = 1 ]; then
+              echo "using $matches (requested $MODEL)"; echo "MODEL=$matches" >> "$GITHUB_ENV"
+            else
+              echo "model $MODEL is not offered by the gateway (candidates: ${matches:-none})"; exit 1
+            fi
+          fi
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: npm ci --prefix examples/customers-app --no-audit --no-fund
+      - run: scripts/closed-loop-test.sh --config examples/models/vercel-gateway.json --model "$MODEL"
+      - name: Results
+        if: always()
+        run: |
+          for f in target/closed-loop/eval-*/eval.md; do echo "=== $f"; cat "$f"; cat "$f" >> "$GITHUB_STEP_SUMMARY"; done
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-gateway
+          path: |
+            target/closed-loop/eval-*/eval.json
+            target/closed-loop/eval-*/eval.md
+            target/closed-loop/eval-*/*/report.json
+            target/closed-loop/eval-*/*/run.jsonl
+            target/closed-loop/eval-*/*/accepted.diff
