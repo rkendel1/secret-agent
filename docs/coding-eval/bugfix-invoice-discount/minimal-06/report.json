@@ -1,0 +1,47 @@
+{
+  "task": "bugfix-invoice-discount",
+  "context": "minimal",
+  "model": "anthropic:claude-opus-5-5 via https://api.anthropic.com/v1/messages",
+  "outcome": "accepted",
+  "baselinePassed": false,
+  "failingTests": [
+    "test/invoice.test.js"
+  ],
+  "editable": [
+    "src/invoice.js"
+  ],
+  "attempts": [
+    {
+      "attempt": 1,
+      "model": "claude-opus-5-5",
+      "usage": {
+        "input_tokens": 561,
+        "output_tokens": 387,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "promptBytes": 1492,
+      "filesChanged": [
+        "src/invoice.js"
+      ],
+      "outsideBoundary": false,
+      "editedTests": false,
+      "testExit": 0,
+      "testsPassed": true,
+      "accepted": true,
+      "rolledBack": false,
+      "durationMs": 4802
+    }
+  ],
+  "testRuns": 2,
+  "modelCalls": 1,
+  "inputTokens": 561,
+  "outputTokens": 387,
+  "tokensEstimated": false,
+  "rollbacks": 0,
+  "acceptedFiles": [
+    "src/invoice.js"
+  ],
+  "wallMs": 5287,
+  "startedAt": "2026-10-16T00:10:36.601Z"
+}

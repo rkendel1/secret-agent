@@ -1,0 +1,11 @@
+--- a/src/invoice.js
++++ b/src/invoice.js
+@@ -18,7 +18,7 @@
+  */
+ export function total(invoice) {
+   const sub = subtotal(invoice);
+-  const discount = invoice.discountPercent ? sub * invoice.discountPercent : 0;
++  const discount = invoice.discountPercent ? sub * (invoice.discountPercent / 100) : 0;
+   const taxable = sub - discount;
+   return roundCents(taxable * (1 + (invoice.taxRate ?? 0)));
+ }
