@@ -4,8 +4,10 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 use std::time::Duration;
 
+use agent_core::generic::CodingContext;
 use agent_core::plan::ContextMode;
 use agent_model::{ModelConfig, Provider};
+use appport_agent::coding::{coding_eval, coding_markdown, CodingEvalOptions};
 use appport_agent::eval::{eval, markdown, EvalOptions};
 use appport_agent::host::HostConfig;
 use appport_agent::report::Log;
@@ -19,6 +21,9 @@ satisfies its contract.
 USAGE
   appport-agent run  --project <dir> --intent <text> [model options] [run options]
   appport-agent plan --project <dir> --intent <text> [--json]
+  appport-agent code-eval --tasks <dir> [model options] --out <dir> [--trials <n>]
+                     [--arms observed,minimal] [--min-success <0..1>] [--require-test-runs]
+                     (ordinary repositories, no AppPort: see docs/coding-agent-eval.md)
   appport-agent eval --project <dir> --intent <text> [model options] --out <dir>
                      [--trials <n>] [--arms knowledge,bare] [--max-attempts <n>]
 
@@ -51,7 +56,9 @@ EVAL OPTIONS
 
 EXIT STATUS
   run: 0 accepted, 1 rejected, 2 error
-  eval: 0 when the first arm accepted at least one trial, 1 otherwise, 2 error";
+  eval: 0 when the first arm accepted at least one trial, 1 otherwise, 2 error
+  code-eval: 0 when the first arm's success rate is at least --min-success (default 0)
+             and, with --require-test-runs, every trial ran the test command; 1 otherwise";
 
 fn main() -> ExitCode {
     match main_inner() {
@@ -73,7 +80,7 @@ fn main_inner() -> Result<ExitCode, String> {
     let mut flags: Vec<(String, Option<String>)> = Vec::new();
     while let Some(flag) = args.next() {
         let name = flag.strip_prefix("--").ok_or_else(|| format!("unexpected argument {flag:?}"))?.to_string();
-        let value = if matches!(name.as_str(), "json" | "quiet") {
+        let value = if matches!(name.as_str(), "json" | "quiet" | "require-test-runs") {
             None
         } else {
             Some(args.next().ok_or_else(|| format!("--{name} needs a value"))?)
@@ -83,7 +90,7 @@ fn main_inner() -> Result<ExitCode, String> {
     let get = |name: &str| flags.iter().rev().find(|(n, _)| n == name).and_then(|(_, v)| v.clone());
     let has = |name: &str| flags.iter().any(|(n, _)| n == name);
     for (name, _) in &flags {
-        const KNOWN: [&str; 21] = [
+        const KNOWN: [&str; 25] = [
             "project",
             "intent",
             "config",
@@ -105,12 +112,19 @@ fn main_inner() -> Result<ExitCode, String> {
             "out",
             "trials",
             "arms",
+            "tasks",
+            "min-success",
+            "test-timeout",
+            "require-test-runs",
         ];
         if !KNOWN.contains(&name.as_str()) {
             return Err(format!("unknown option --{name}\n\n{USAGE}"));
         }
     }
 
+    if command == "code-eval" {
+        return code_eval_command(&get, has("quiet"));
+    }
     let project = PathBuf::from(get("project").ok_or("--project is required")?);
     let intent = get("intent").ok_or("--intent is required")?;
     let host = HostConfig {
@@ -141,36 +155,7 @@ fn main_inner() -> Result<ExitCode, String> {
             Ok(ExitCode::SUCCESS)
         }
         "run" | "eval" => {
-            let mut model = match get("config") {
-                Some(path) => ModelConfig::from_file(path.as_ref()).map_err(|e| e.to_string())?,
-                None => ModelConfig::new(
-                    get("provider")
-                        .ok_or("--provider (or --config) is required")?
-                        .parse()
-                        .map_err(|e: agent_model::ModelError| e.to_string())?,
-                ),
-            };
-            if let Some(p) = get("provider") {
-                model.provider = p.parse().map_err(|e: agent_model::ModelError| e.to_string())?;
-            }
-            if let Some(v) = get("model") {
-                model.model = Some(v);
-            }
-            if let Some(v) = get("base-url") {
-                model.base_url = Some(v);
-            }
-            if let Some(v) = get("api-key-env") {
-                model.api_key_env = Some(v);
-            }
-            if let Some(v) = get("command") {
-                model.command = v.split_whitespace().map(str::to_string).collect();
-            }
-            if let Some(v) = get("responses") {
-                model.responses = Some(PathBuf::from(v));
-            }
-            if let Some(v) = get("max-tokens") {
-                model.max_tokens = v.parse().map_err(|_| "--max-tokens must be a number")?;
-            }
+            let model = model_config(&get)?;
             let max_attempts = get("max-attempts")
                 .map(|n| n.parse().map_err(|_| "--max-attempts must be a number"))
                 .transpose()?
@@ -219,4 +204,98 @@ fn main_inner() -> Result<ExitCode, String> {
         }
         other => Err(format!("unknown command {other:?}\n\n{USAGE}")),
     }
+}
+
+/// The model configuration from `--config` and the model flags (flags win).
+fn model_config(get: &dyn Fn(&str) -> Option<String>) -> Result<ModelConfig, String> {
+    let mut model = match get("config") {
+        Some(path) => ModelConfig::from_file(path.as_ref()).map_err(|e| e.to_string())?,
+        None => ModelConfig::new(
+            get("provider")
+                .ok_or("--provider (or --config) is required")?
+                .parse()
+                .map_err(|e: agent_model::ModelError| e.to_string())?,
+        ),
+    };
+    if let Some(p) = get("provider") {
+        model.provider = p.parse().map_err(|e: agent_model::ModelError| e.to_string())?;
+    }
+    if let Some(v) = get("model") {
+        model.model = Some(v);
+    }
+    if let Some(v) = get("base-url") {
+        model.base_url = Some(v);
+    }
+    if let Some(v) = get("api-key-env") {
+        model.api_key_env = Some(v);
+    }
+    if let Some(v) = get("command") {
+        model.command = v.split_whitespace().map(str::to_string).collect();
+    }
+    if let Some(v) = get("responses") {
+        model.responses = Some(PathBuf::from(v));
+    }
+    if let Some(v) = get("max-tokens") {
+        model.max_tokens = v.parse().map_err(|_| "--max-tokens must be a number")?;
+    }
+    Ok(model)
+}
+
+/// `code-eval`: the coding-agent evaluation on ordinary repositories.
+fn code_eval_command(get: &dyn Fn(&str) -> Option<String>, quiet: bool) -> Result<ExitCode, String> {
+    let root = PathBuf::from(get("tasks").ok_or("--tasks is required")?);
+    let mut tasks: Vec<PathBuf> = std::fs::read_dir(&root)
+        .map_err(|e| format!("{}: {e}", root.display()))?
+        .filter_map(|e| e.ok().map(|e| e.path()))
+        .filter(|p| p.join("task.json").is_file())
+        .collect();
+    if root.join("task.json").is_file() {
+        tasks = vec![root.clone()];
+    }
+    tasks.sort();
+    if tasks.is_empty() {
+        return Err(format!("{} holds no task.json", root.display()));
+    }
+    let arms = get("arms")
+        .unwrap_or_else(|| "observed,minimal".into())
+        .split(',')
+        .map(|a| a.trim().parse::<CodingContext>())
+        .collect::<Result<Vec<_>, _>>()?;
+    let first = *arms.first().ok_or("--arms is empty")?;
+    let number = |name: &str, default: f64| -> Result<f64, String> {
+        get(name)
+            .map(|v| v.parse::<f64>().map_err(|_| format!("--{name} must be a number")))
+            .transpose()
+            .map(|v| v.unwrap_or(default))
+    };
+    let report = coding_eval(&CodingEvalOptions {
+        tasks,
+        model: model_config(get)?,
+        arms,
+        trials: number("trials", 5.0)? as u32,
+        max_attempts: number("max-attempts", 3.0)? as u32,
+        test_timeout: Duration::from_secs(number("test-timeout", 120.0)? as u64),
+        out: PathBuf::from(get("out").ok_or("--out is required")?),
+        quiet,
+    })?;
+    println!("{}", coding_markdown(&report));
+    let min = number("min-success", 0.0)?;
+    let arm = report.arm(first).ok_or("no trials ran")?;
+    let mut ok = arm.success_rate >= min;
+    if !ok {
+        eprintln!("FAILED: {first} success rate {:.0}% is below {:.0}%", arm.success_rate * 100.0, min * 100.0);
+    }
+    if get("require-test-runs").is_some() || std::env::args().any(|a| a == "--require-test-runs") {
+        let silent: Vec<String> = report
+            .trials
+            .iter()
+            .filter(|t| t.test_runs == 0)
+            .map(|t| format!("{} {} #{}", t.task, t.arm, t.trial))
+            .collect();
+        if !silent.is_empty() {
+            eprintln!("FAILED: the test command never ran in {}", silent.join(", "));
+            ok = false;
+        }
+    }
+    Ok(if ok { ExitCode::SUCCESS } else { ExitCode::from(1) })
 }
