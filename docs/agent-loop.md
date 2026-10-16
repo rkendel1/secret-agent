@@ -117,9 +117,24 @@ appport-agent run ... --provider command --command "my-model-runner --flag"
 appport-agent run ... --provider scripted --responses examples/scripted/replace-customer-lookup
 ```
 
-Keys are read from the environment variable the configuration names and are
-never written to a file, the report or the log. Both HTTP providers are tested
-against local stand-ins of their APIs (`crates/agent-model/tests/providers.rs`).
+Keys are read from the environment variable the configuration names. They are
+never written to a file, the report or the log, and never passed to the
+application or a test command, which run code a model wrote (see
+[Safety guarantees](#safety-guarantees)). Both HTTP providers are tested against
+local stand-ins of their APIs (`crates/agent-model/tests/providers.rs`,
+`tests/reliability.rs`).
+
+**Provider failures.**
+- **Retried, within one request:**
+  - rate limits (429) and failing servers (500, 502, 503, 504, 529), honouring `Retry-After`;
+  - failed connections.
+
+  Retries use exponential backoff with jitter, up to `maxRetries` (default 2) and at most `maxRetryWaitSecs` (default 30) per wait. A `Retry-After` longer than that ends the call instead.
+- **Never retried:**
+  - a timeout, because the request may still be served;
+  - 400, 401, 403 and 404.
+- **One layer of retries only.** The loop itself never retries a failed model call, so retries do not multiply.
+- **Refusals and empty answers** are provider failures, never proposals.
 
 ## Demo and metrics
 
@@ -154,13 +169,77 @@ without the plan's context, on the same intent; the report format already
 records what that comparison needs (attempts, rejected checks, tokens, context
 size).
 
+## Outcomes and exit status
+
+`run` writes the report (`--report`) for every outcome it can account for:
+
+| outcome | exit | meaning | the project afterwards |
+|---|---|---|---|
+| `accepted` | 0 | a change passed every check, and showed the goal was achieved (below) | changed: the accepted files |
+| `rejected` | 1 | no attempt passed | unchanged: every attempt undone and checked |
+| (usage or harness error) | 2 | bad options, or the agent could not run the unchanged application | unchanged |
+| `limitation` | 3 | declined before changing anything; `reason` says why: no plan (`refused to plan: …`), no way to show the goal, uncommitted changes in a file it would rewrite | unchanged |
+| `provider-error` | 4 | the model provider failed (after its retries) | unchanged |
+| `rollback-failed` | 5 | a rejected change could not be undone and checked | **uncertain**: the report lists what was restored, what was not, and what was left alone because it changed meanwhile |
+| `interrupted` | — | only ever seen in a report left by a run that died while a change was applied | see `inFlight` |
+
+### Goal evidence
+
+Passing every check shows a change preserves the contract and the application's behaviour. It does not show the change did what was asked. A behaviour-preserving rewrite that ignores the goal passes the same checks.
+
+So `run` accepts a change only with evidence of the goal:
+
+- **A goal check** (`--goal-check <file.json>`): a short scenario run through the application's own capabilities. The check must **fail** on the unchanged project, or the run is declined, because a check that already passes cannot show anything. A change is accepted only if the check then **passes**.
+
+  ```json
+  {
+    "description": "A newly registered customer gets a billing contact.",
+    "steps": [
+      { "capability": "customers.register@1", "input": { "name": "Goal Check", "email": "goal.check@example.com", "tier": "gold" } },
+      { "capability": "billing.contact@1", "input": { "customerId": { "$step": 0, "at": "/customerId" } },
+        "expect": [{ "at": "/email", "equals": { "$step": 0, "input": "/email" } }] }
+    ]
+  }
+  ```
+
+  - Each step must answer `ok`.
+  - `{"$step": n, "at": ptr}` refers to an earlier step's output, and `{"$step": n, "input": ptr}` to its input.
+  - The application is granted only the permissions those capabilities declare.
+  - A task file with a `goalCheck` field works too.
+- **Declared verification:** a check the contract declares failed on the unchanged application and passes after the change. For example, `customers.register@1`'s `customer-readable` verification fails until the lookup reads the store.
+
+If neither is available, `run` declines with `limitation` before any model call. `--accept-preserving` accepts a contract-preserving change without goal evidence, and the report records `goal.method: none`.
+
+The evaluation harnesses (`eval`, `arm-eval`) don't need this, because they score the goal with their own oracle.
+
+### Safety guarantees
+
+Each is tested in `crates/appport-agent/tests/readiness.rs` and `src/edit.rs`:
+
+- **Nothing outside the project is read or written.**
+  - Paths are normalized lexically and checked component by component.
+  - Symbolic links are never followed. A linked source file is reported (`source.symlink`), not observed.
+- **Writes are checked first.** Every target is checked before anything is written. Each file is written through a temporary file and a rename.
+- **A rollback is reported only when it is checked.**
+  - Each file is restored byte for byte (or removed again) and re-read.
+  - A file that changed after the agent wrote it is left alone and reported, never overwritten.
+- **Uncommitted work is not taken over.** In a git work tree, `run` declines if a file it would rewrite has uncommitted or untracked changes. `--allow-dirty` overrides this.
+- **One run per project.** A second concurrent run on the same project is refused. The lock lives in the temporary directory, and a dead run's lock is taken over.
+- **Interruption is recorded.** Before the changed application runs, the report is written with `outcome: interrupted` and `inFlight`: each changed file's path, its SHA-256 before and as written, and its original contents. A run that dies there leaves exactly that record. Restoring from it is manual; runs do not resume.
+- **No credentials reach model-written code.**
+  - The application and test commands run without `AI_GATEWAY_API_KEY`, `ANTHROPIC_API_KEY`, `ANTHROPIC_WORKSPACE_ID`, `OPENAI_API_KEY`, `VERCEL_OIDC_TOKEN`, or any variable the model configuration names.
+  - The log and the report are redacted of those values.
+- **Test commands are contained on timeout.** A command that times out is killed with its whole process group.
+
 ## Tests
 
 | Test | Needs | Covers |
 |---|---|---|
 | `crates/agent-core` unit + `tests/agent.rs` | nothing | conformance, synthesis, the scanner, observation of the sample project, the plan (snapshot), the model task, refusals, every judge rule including a changed contract |
 | `crates/agent-model/tests/providers.rs` | nothing | each provider's wire format, errors, keys, configuration |
+| `crates/agent-model/tests/reliability.rs`, `tests/gateway.rs` | nothing | retries, `Retry-After`, no retry of timeouts or auth failures, refusals and empty answers, secret redaction; the free-gateway preflight |
 | `crates/appport-agent/tests/loop.rs` (`--ignored`) | Node.js, `npm ci` in the example | the whole loop on the real runtime: accept after a rejection; an edit outside the boundary is never written; a contradicted verification is rejected and rolled back; an implementation that does not load; an unusable response fed back; the offline manifest fixture still matches the runtime |
+| `crates/appport-agent/tests/readiness.rs` (mostly `--ignored`) | Node.js, `npm ci` in the example | the production-readiness matrix: goal evidence, exit codes, symlinks, provider failure, retry without a duplicate write, interruption, secrets, uncommitted work, concurrent runs (see `docs/production-readiness.md`) |
 
 CI runs the last group and the demo in the `agent-e2e` job.
 
@@ -185,5 +264,4 @@ would be accepted on structure alone.
   target). Stream capabilities are not probed.
 - Inputs whose schema needs a `pattern` cannot always be synthesized; such a flow
   is recorded as not run and its check fails.
-- Generated code runs on your machine when the application is started. Run the
-  agent where that is acceptable.
+- **Generated code runs on your machine, unsandboxed,** when the application or a test command starts. It has your user's filesystem and network access, though not the provider credentials. Run the agent where that is acceptable. See `docs/production-readiness.md`.

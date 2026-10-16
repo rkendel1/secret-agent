@@ -11,6 +11,7 @@ use agent_model::{ModelConfig, Provider};
 use appport_agent::arms::{arm_eval, arm_markdown, Arm, ArmEvalOptions, SMOKE_TASKS};
 use appport_agent::coding::{coding_eval, coding_markdown, CodingEvalOptions};
 use appport_agent::eval::{eval, markdown, EvalOptions};
+use appport_agent::goal::read_goal_check;
 use appport_agent::host::HostConfig;
 use appport_agent::report::Log;
 use appport_agent::run::{prepare, run, RunOptions};
@@ -50,6 +51,11 @@ MODEL OPTIONS (a --config file and flags combine; flags win)
   --max-tokens <n>         completion budget per call (default 8192)
 
 RUN OPTIONS
+  --goal-check <file.json> a check of the goal itself (see docs/agent-loop.md): a change is
+                           accepted only if it fails before the change and passes after it
+  --accept-preserving      accept a verified, contract-preserving change even when nothing
+                           shows the goal was achieved (by default such a run is declined)
+  --allow-dirty            rewrite files that have uncommitted changes (refused by default)
   --max-attempts <n>       model attempts before giving up (default 3)
   --report <file.json>     write the run report
   --log <file.jsonl>       write the step-by-step run log
@@ -73,7 +79,13 @@ FREE GATEWAY (arm-eval --free-gateway, preflight)
   --mode comparison        every task in --tasks, --trials trials (the default)
 
 EXIT STATUS
-  run: 0 accepted, 1 rejected, 2 error
+  run: 0 accepted (verified, with goal evidence unless --accept-preserving)
+       1 rejected (no attempt passed; every attempt was undone and checked)
+       2 usage or harness error
+       3 limitation (declined before changing anything: no plan, no goal evidence possible,
+         uncommitted changes, ...)
+       4 the model provider failed (nothing is left applied)
+       5 a rejected change could not be undone and checked: inspect the project (see the report)
   eval: 0 when the first arm accepted at least one trial, 1 otherwise, 2 error
   arm-eval: 1 when the preflight failed, when a trial hit a harness error, when no model call
             succeeded, or when more than 10% of trials hit provider errors; otherwise 0 (which
@@ -102,7 +114,10 @@ fn main_inner() -> Result<ExitCode, String> {
     let mut flags: Vec<(String, Option<String>)> = Vec::new();
     while let Some(flag) = args.next() {
         let name = flag.strip_prefix("--").ok_or_else(|| format!("unexpected argument {flag:?}"))?.to_string();
-        let value = if matches!(name.as_str(), "json" | "quiet" | "require-test-runs" | "free-gateway") {
+        let value = if matches!(
+            name.as_str(),
+            "json" | "quiet" | "require-test-runs" | "free-gateway" | "accept-preserving" | "allow-dirty"
+        ) {
             None
         } else {
             Some(args.next().ok_or_else(|| format!("--{name} needs a value"))?)
@@ -112,7 +127,7 @@ fn main_inner() -> Result<ExitCode, String> {
     let get = |name: &str| flags.iter().rev().find(|(n, _)| n == name).and_then(|(_, v)| v.clone());
     let has = |name: &str| flags.iter().any(|(n, _)| n == name);
     for (name, _) in &flags {
-        const KNOWN: [&str; 32] = [
+        const KNOWN: [&str; 35] = [
             "project",
             "intent",
             "config",
@@ -145,6 +160,9 @@ fn main_inner() -> Result<ExitCode, String> {
             "free-gateway",
             "max-model-calls",
             "max-minutes",
+            "goal-check",
+            "accept-preserving",
+            "allow-dirty",
         ];
         if !KNOWN.contains(&name.as_str()) {
             return Err(format!("unknown option --{name}\n\n{USAGE}"));
@@ -167,6 +185,7 @@ fn main_inner() -> Result<ExitCode, String> {
         timeout: Duration::from_secs(
             get("timeout").map(|t| t.parse().map_err(|_| "--timeout must be seconds")).transpose()?.unwrap_or(20),
         ),
+        ..HostConfig::default()
     };
 
     match command.as_str() {
@@ -181,6 +200,9 @@ fn main_inner() -> Result<ExitCode, String> {
                 log: get("log").map(PathBuf::from),
                 quiet: has("json") || has("quiet"),
                 context: ContextMode::Knowledge,
+                goal_check: None,
+                require_goal_evidence: false,
+                allow_dirty: true,
             };
             let mut log = Log::new(options.log.as_deref(), options.quiet).map_err(|e| e.to_string())?;
             let prepared = prepare(&options, &mut log)?;
@@ -233,11 +255,33 @@ fn main_inner() -> Result<ExitCode, String> {
                 log: get("log").map(PathBuf::from),
                 quiet: has("quiet"),
                 context: get("context").map(|c| c.parse::<ContextMode>()).transpose()?.unwrap_or_default(),
+                goal_check: get("goal-check").map(|p| read_goal_check(p.as_ref())).transpose()?,
+                require_goal_evidence: !has("accept-preserving"),
+                allow_dirty: has("allow-dirty"),
             };
             let report = run(&options)?;
-            Ok(if report.outcome == "accepted" { ExitCode::SUCCESS } else { ExitCode::from(1) })
+            if report.outcome != "accepted" {
+                eprintln!(
+                    "appport-agent: {}{}",
+                    report.outcome,
+                    report.reason.as_ref().map(|r| format!(": {r}")).unwrap_or_default()
+                );
+            }
+            Ok(ExitCode::from(run_exit_code(&report.outcome)))
         }
         other => Err(format!("unknown command {other:?}\n\n{USAGE}")),
+    }
+}
+
+/// The exit status of `run` for an outcome (see USAGE).
+fn run_exit_code(outcome: &str) -> u8 {
+    match outcome {
+        "accepted" => 0,
+        "rejected" => 1,
+        "limitation" => 3,
+        "provider-error" => 4,
+        "rollback-failed" | "interrupted" => 5,
+        _ => 2,
     }
 }
 
@@ -397,6 +441,7 @@ fn arm_eval_command(get: &dyn Fn(&str) -> Option<String>, quiet: bool, free_gate
         host: HostConfig {
             node: get("node").map_or_else(|| PathBuf::from("node"), PathBuf::from),
             timeout: Duration::from_secs(number("timeout", 20.0)? as u64),
+            ..HostConfig::default()
         },
         out: PathBuf::from(get("out").ok_or("--out is required")?),
         quiet,

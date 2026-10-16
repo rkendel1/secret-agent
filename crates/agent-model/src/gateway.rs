@@ -117,11 +117,28 @@ pub fn redact(text: &str, secrets: &[String]) -> String {
     out
 }
 
-/// The secrets a configuration can expose (the API key, when set).
+/// Provider credentials the agent may hold in its environment. None of them is
+/// ever passed to a process the agent runs (the application, a test command),
+/// because those run code a model wrote.
+pub const CREDENTIAL_ENV: &[&str] =
+    &["AI_GATEWAY_API_KEY", "ANTHROPIC_API_KEY", "ANTHROPIC_WORKSPACE_ID", "OPENAI_API_KEY", "VERCEL_OIDC_TOKEN"];
+
+/// The names of every credential variable for `config`: [`CREDENTIAL_ENV`] plus
+/// the variables the configuration names.
+pub fn credential_env(config: &ModelConfig) -> Vec<String> {
+    let mut names: Vec<String> = CREDENTIAL_ENV.iter().map(|s| s.to_string()).collect();
+    for name in [&config.api_key_env, &config.workspace_id_env].into_iter().flatten() {
+        if !names.contains(name) {
+            names.push(name.clone());
+        }
+    }
+    names
+}
+
+/// The secrets a configuration can expose: the values of its credential
+/// variables that are set (see [`credential_env`]).
 pub fn secrets_of(config: &ModelConfig) -> Vec<String> {
-    let default = if config.provider == Provider::Anthropic { "ANTHROPIC_API_KEY" } else { "OPENAI_API_KEY" };
-    let name = config.api_key_env.as_deref().unwrap_or(default);
-    std::env::var(name).ok().filter(|v| !v.is_empty()).into_iter().collect()
+    credential_env(config).iter().filter_map(|name| std::env::var(name).ok()).filter(|v| v.len() >= 8).collect()
 }
 
 fn next_steps(category: PreflightCategory, model: &str, key_env: &str) -> Vec<String> {

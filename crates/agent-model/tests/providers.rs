@@ -113,6 +113,7 @@ fn provider_errors_are_reported_not_swallowed() {
     let mut config = ModelConfig::new(Provider::OpenAiCompatible);
     config.model = Some("m".into());
     config.base_url = Some(url);
+    config.max_retries = 0;
     let error = connect(&config).unwrap().complete(&request()).unwrap_err().to_string();
     assert!(error.contains("429") && error.contains("slow down"), "{error}");
     server.join().unwrap();

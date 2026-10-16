@@ -44,8 +44,10 @@ impl CommandRun {
     }
 }
 
-/// Runs `command` in `dir`, capturing stdout and stderr together.
-pub fn run_command(dir: &Path, command: &[String], timeout: Duration) -> CommandRun {
+/// Runs `command` in `dir`, capturing stdout and stderr together, without any
+/// provider credential in its environment ([`agent_model::gateway::CREDENTIAL_ENV`]
+/// and `hidden_env`). On timeout its whole process group is killed.
+pub fn run_command(dir: &Path, command: &[String], timeout: Duration, hidden_env: &[String]) -> CommandRun {
     let began = Instant::now();
     let failed = |output: String| CommandRun {
         command: command.to_vec(),
@@ -55,7 +57,15 @@ pub fn run_command(dir: &Path, command: &[String], timeout: Duration) -> Command
         output,
     };
     let Some((program, args)) = command.split_first() else { return failed("empty command".into()) };
-    let mut child = match Command::new(program)
+    let mut builder = Command::new(program);
+    // The command runs code a model wrote: it never sees a provider credential.
+    for name in agent_model::gateway::CREDENTIAL_ENV.iter().copied().chain(hidden_env.iter().map(String::as_str)) {
+        builder.env_remove(name);
+    }
+    // Its own process group, so a timeout stops everything it started.
+    #[cfg(unix)]
+    std::os::unix::process::CommandExt::process_group(&mut builder, 0);
+    let mut child = match builder
         .args(args)
         .current_dir(dir)
         .env("CI", "1")
@@ -88,6 +98,8 @@ pub fn run_command(dir: &Path, command: &[String], timeout: Duration) -> Command
         match child.try_wait() {
             Ok(Some(status)) => break (Some(status), false),
             Ok(None) if Instant::now() > deadline => {
+                #[cfg(unix)]
+                let _ = Command::new("kill").args(["-KILL", &format!("-{}", child.id())]).status();
                 let _ = child.kill();
                 break (child.wait().ok(), true);
             }
@@ -179,7 +191,10 @@ pub struct CodingReport {
 
 /// Runs the loop on `options.repo`.
 pub fn run_coding(options: &CodingOptions) -> Result<CodingReport, String> {
-    let mut log = Log::new(options.log.as_deref(), options.quiet).map_err(|e| e.to_string())?;
+    let mut log = Log::new(options.log.as_deref(), options.quiet)
+        .map_err(|e| e.to_string())?
+        .redacting(agent_model::gateway::secrets_of(&options.model));
+    let hidden = agent_model::gateway::credential_env(&options.model);
     let started_at = now_rfc3339();
     let task = &options.task;
     let mut model: Box<dyn Model> = connect(&options.model).map_err(|e| e.to_string())?;
@@ -212,7 +227,7 @@ pub fn run_coding(options: &CodingOptions) -> Result<CodingReport, String> {
         format!("{} source file(s)", project.sources.len()),
     );
 
-    let first = run_command(&root, &task.test, options.test_timeout);
+    let first = run_command(&root, &task.test, options.test_timeout, &hidden);
     report.test_runs += 1;
     let baseline = Baseline { passed: first.passed(), output: first.output.clone() };
     report.baseline_passed = baseline.passed;
@@ -327,7 +342,7 @@ pub fn run_coding(options: &CodingOptions) -> Result<CodingReport, String> {
             report.attempts.push(record);
             continue;
         }
-        let run = run_command(&root, &task.test, options.test_timeout);
+        let run = run_command(&root, &task.test, options.test_timeout, &hidden);
         report.test_runs += 1;
         record.test_exit = run.exit_code;
         record.tests_passed = run.passed();
@@ -350,8 +365,19 @@ pub fn run_coding(options: &CodingOptions) -> Result<CodingReport, String> {
             report.outcome = "accepted".into();
             break;
         }
-        edit::rollback(&root, applied);
-        record.rolled_back = true;
+        let undone = edit::rollback(&root, applied);
+        record.rolled_back = undone.verified();
+        if !undone.verified() {
+            log.event(
+                "apply",
+                json!({ "attempt": attempt, "rollback": &undone }),
+                format!("attempt {attempt}: could not be undone cleanly: {}", undone.describe()),
+            );
+            report.outcome = "rollback-failed".into();
+            report.refusal = Some(undone.describe());
+            report.attempts.push(record);
+            break;
+        }
         feedback = vec![format!(
             "`{}` failed (exit {:?}{}). Its output ends with:\n```\n{}\n```",
             task.test.join(" "),
@@ -560,7 +586,12 @@ pub fn coding_eval(options: &CodingEvalOptions) -> Result<CodingEvalReport, Stri
                     if summary.outcome != "error" {
                         let target = repo.join("hidden");
                         copy_project(&task_dir.join("hidden"), &target).map_err(|e| e.to_string())?;
-                        let run = run_command(&repo, hidden, options.test_timeout);
+                        let run = run_command(
+                            &repo,
+                            hidden,
+                            options.test_timeout,
+                            &agent_model::gateway::credential_env(&options.model),
+                        );
                         let _ = fs::write(dir.join("hidden.txt"), &run.output);
                         let _ = fs::remove_dir_all(&target);
                         summary.hidden_passed = Some(run.passed());

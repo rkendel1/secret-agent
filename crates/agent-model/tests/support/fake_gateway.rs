@@ -24,6 +24,9 @@ pub struct Seen {
 /// What to answer: `(status, body text, delay)`.
 pub type Handler = dyn Fn(&Seen) -> (u16, String, Duration) + Send + Sync;
 
+/// What to answer, with extra response headers.
+pub type HeaderHandler = dyn Fn(&Seen) -> (u16, String, Duration, Vec<(String, String)>) + Send + Sync;
+
 pub struct FakeGateway {
     /// `http://127.0.0.1:<port>/v1`
     pub base_url: String,
@@ -32,11 +35,18 @@ pub struct FakeGateway {
 
 impl FakeGateway {
     pub fn start(handler: Box<Handler>) -> FakeGateway {
+        FakeGateway::start_with_headers(Box::new(move |seen: &Seen| {
+            let (status, text, delay) = handler(seen);
+            (status, text, delay, Vec::new())
+        }))
+    }
+
+    pub fn start_with_headers(handler: Box<HeaderHandler>) -> FakeGateway {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let base_url = format!("http://{}/v1", listener.local_addr().unwrap());
         let seen = Arc::new(Mutex::new(Vec::new()));
         let log = Arc::clone(&seen);
-        let handler: Arc<Handler> = Arc::from(handler);
+        let handler: Arc<HeaderHandler> = Arc::from(handler);
         thread::spawn(move || {
             for stream in listener.incoming() {
                 let Ok(stream) = stream else { continue };
@@ -75,12 +85,13 @@ impl FakeGateway {
                         body: serde_json::from_slice(&payload).unwrap_or(Value::Null),
                     };
                     log.lock().unwrap().push(seen.clone());
-                    let (status, text, delay) = handler(&seen);
+                    let (status, text, delay, headers) = handler(&seen);
                     thread::sleep(delay);
                     let mut stream = stream;
+                    let extra: String = headers.iter().map(|(k, v)| format!("{k}: {v}\r\n")).collect();
                     let _ = write!(
                         stream,
-                        "HTTP/1.1 {status} X\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{text}",
+                        "HTTP/1.1 {status} X\r\ncontent-type: application/json\r\ncontent-length: {}\r\n{extra}connection: close\r\n\r\n{text}",
                         text.len()
                     );
                 });

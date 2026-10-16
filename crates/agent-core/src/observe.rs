@@ -133,9 +133,12 @@ impl Project {
         self.sources.iter().map(|s| s.bytes).sum()
     }
 
-    /// Reads a project file by its relative path.
+    /// Reads a project file by its relative path. Refuses a path that leaves the
+    /// root or passes through a symbolic link, so nothing outside the project is
+    /// read (and sent to a model) through a link.
     pub fn read(&self, path: &str) -> io::Result<String> {
-        fs::read_to_string(self.root.join(path))
+        let path = inside(&self.root, path)?;
+        fs::read_to_string(path)
     }
 }
 
@@ -182,7 +185,16 @@ pub fn observe(root: &Path) -> io::Result<Project> {
     }
 
     let mut paths = Vec::new();
-    walk(&root, &root, &mut paths)?;
+    let mut links = Vec::new();
+    walk(&root, &root, &mut paths, &mut links)?;
+    links.sort();
+    for link in &links {
+        findings.push(finding(
+            "source.symlink",
+            link,
+            "a symbolic link; it is not observed, read or written (it may point outside the project)",
+        ));
+    }
     paths.sort();
     let known: BTreeSet<String> = paths.iter().cloned().collect();
 
@@ -245,14 +257,39 @@ fn finding(code: &str, path: &str, message: &str) -> Finding {
     Finding { code: code.into(), path: path.into(), message: message.into() }
 }
 
-fn walk(root: &Path, dir: &Path, out: &mut Vec<String>) -> io::Result<()> {
+/// The absolute path of `relative` under `root`, if it stays inside the root
+/// and no existing component of it is a symbolic link.
+pub fn inside(root: &Path, relative: &str) -> io::Result<std::path::PathBuf> {
+    let denied = |why: String| io::Error::new(io::ErrorKind::PermissionDenied, why);
+    let normalized =
+        normalize(relative).ok_or_else(|| denied(format!("{relative} is not a path inside the project")))?;
+    let mut path = root.to_path_buf();
+    for part in normalized.split('/') {
+        path.push(part);
+        match fs::symlink_metadata(&path) {
+            Ok(meta) if meta.file_type().is_symlink() => {
+                return Err(denied(format!("{relative} passes through a symbolic link ({})", path.display())))
+            }
+            _ => {}
+        }
+    }
+    Ok(path)
+}
+
+fn walk(root: &Path, dir: &Path, out: &mut Vec<String>, links: &mut Vec<String>) -> io::Result<()> {
     for entry in fs::read_dir(dir)? {
         let entry = entry?;
         let path = entry.path();
         let name = entry.file_name().to_string_lossy().to_string();
-        if entry.file_type()?.is_dir() {
+        let kind = entry.file_type()?;
+        if kind.is_symlink() {
+            // Dependencies are commonly linked; anything else is reported, never followed.
             if !SKIP_DIRECTORIES.contains(&name.as_str()) && !name.starts_with('.') {
-                walk(root, &path, out)?;
+                links.push(relative(root, &path));
+            }
+        } else if kind.is_dir() {
+            if !SKIP_DIRECTORIES.contains(&name.as_str()) && !name.starts_with('.') {
+                walk(root, &path, out, links)?;
             }
         } else if path.extension().and_then(|e| e.to_str()).is_some_and(|e| SOURCE_EXTENSIONS.contains(&e))
             && !name.ends_with(".d.ts")
@@ -621,5 +658,29 @@ import "./side-effect.mjs";"#,
         let instance = "export const app = createApplication({});";
         assert_eq!(application_entry("a.mjs", instance).unwrap().kind, EntryKind::Instance);
         assert_eq!(application_entry("a.mjs", "const x = 1;"), None);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn never_follows_a_symbolic_link() {
+        let base = std::env::temp_dir().join(format!("agent-core-observe-link-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&base);
+        let (root, outside) = (base.join("project"), base.join("outside"));
+        fs::create_dir_all(root.join("src")).unwrap();
+        fs::create_dir_all(&outside).unwrap();
+        fs::write(root.join("src/a.mjs"), "export const a = 1;\n").unwrap();
+        fs::write(outside.join("secret.mjs"), "export const key = 'outside';\n").unwrap();
+        std::os::unix::fs::symlink(outside.join("secret.mjs"), root.join("src/b.mjs")).unwrap();
+        std::os::unix::fs::symlink(&outside, root.join("src/linked")).unwrap();
+        let project = observe(&root).unwrap();
+        assert_eq!(project.sources.iter().map(|s| s.path.as_str()).collect::<Vec<_>>(), ["src/a.mjs"]);
+        let links: Vec<&str> =
+            project.findings.iter().filter(|f| f.code == "source.symlink").map(|f| f.path.as_str()).collect();
+        assert_eq!(links, ["src/b.mjs", "src/linked"]);
+        for path in ["src/b.mjs", "src/linked/secret.mjs", "../outside/secret.mjs"] {
+            assert!(project.read(path).is_err(), "{path} was read");
+        }
+        assert!(project.read("src/a.mjs").is_ok());
+        fs::remove_dir_all(base).unwrap();
     }
 }

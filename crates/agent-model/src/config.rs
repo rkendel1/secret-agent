@@ -62,6 +62,23 @@ pub struct ModelConfig {
     /// `ANTHROPIC_WORKSPACE_ID`; nothing is sent when it is unset.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub workspace_id_env: Option<String>,
+    /// HTTP providers: how many times a request is retried after a rate limit
+    /// (429), an overloaded or failing server (500, 502, 503, 504, 529) or a
+    /// failed connection. Never after a timeout. Default 2 (3 requests at most).
+    #[serde(default = "default_max_retries")]
+    pub max_retries: u32,
+    /// The longest wait before a retry; a `Retry-After` longer than this ends
+    /// the call instead. Default 30.
+    #[serde(default = "default_max_retry_wait")]
+    pub max_retry_wait_secs: u64,
+}
+
+fn default_max_retries() -> u32 {
+    2
+}
+
+fn default_max_retry_wait() -> u64 {
+    30
 }
 
 fn default_max_tokens() -> u32 {
@@ -86,6 +103,8 @@ impl ModelConfig {
             temperature: None,
             effort: None,
             workspace_id_env: None,
+            max_retries: default_max_retries(),
+            max_retry_wait_secs: default_max_retry_wait(),
         }
     }
 

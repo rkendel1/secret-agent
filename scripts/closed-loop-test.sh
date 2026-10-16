@@ -52,7 +52,25 @@ expect_refusal 2-services-init "$out/services-init" "$open_intent" "contract.unv
 echo "== 3. appport-services with its contract declared"
 "$setup" "$out/services" declared
 cp -R "$out/services" "$out/services-pristine"
-"$agent" run --project "$out/services" --intent "$open_intent" \
+# `appport init` left the target file untracked, and nothing in the declared
+# verification fails before the change, so no change could be shown to achieve
+# the goal. By default the agent declines both, before any model call (exit 3).
+expect_decline() { # <label> <reason substring> [flags...]
+  local label="$1" reason="$2" status=0
+  shift 2
+  "$agent" run --project "$out/services" --intent "$open_intent" "$@" \
+    --provider scripted --responses examples/appport-services/scripted/replace-documents-open \
+    --report "$out/$label.report.json" 2> "$out/$label.log.txt" || status=$?
+  [ "$status" = 3 ] || { echo "FAILED: $label: exit $status, expected 3" >&2; cat "$out/$label.log.txt" >&2; exit 1; }
+  grep -q "$reason" "$out/$label.report.json" || { echo "FAILED: $label: reason does not mention '$reason'" >&2; exit 1; }
+  node -e 'const r = require(process.argv[1]); if (r.totals.modelCalls !== 0 || r.outcome !== "limitation") process.exit(1)' "$repo/$out/$label.report.json"
+  echo "ok: $label: declined ($reason), no model call"
+}
+expect_decline 3-services-dirty "uncommitted changes"
+expect_decline 3-services-no-goal-evidence "nothing observable" --allow-dirty
+# Asked explicitly to accept a contract-preserving change without goal evidence:
+# rejection, rollback and acceptance as before.
+"$agent" run --project "$out/services" --intent "$open_intent" --allow-dirty --accept-preserving \
   --provider scripted --responses examples/appport-services/scripted/replace-documents-open \
   --report "$out/3-services.report.json" --log "$out/3-services.run.jsonl" 2> "$out/3-services.log.txt" || true
 node scripts/check-report.mjs "$out/3-services.report.json" --min-rejected 1 --min-rollbacks 1

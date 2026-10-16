@@ -192,6 +192,10 @@ pub fn eval(options: &EvalOptions) -> Result<EvalReport, String> {
                 log: Some(dir.join("run.jsonl")),
                 quiet: options.quiet,
                 context: *arm,
+                // The harness scores the goal with its own oracle, on a private copy.
+                goal_check: None,
+                require_goal_evidence: false,
+                allow_dirty: true,
             });
             if let Ok(report) = &result {
                 if report.outcome == "accepted" {

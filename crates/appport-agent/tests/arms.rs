@@ -28,7 +28,7 @@ fn every_arm_is_scored_by_the_independent_oracle() {
         trials: 1,
         max_attempts: 3,
         max_turns: 8,
-        host: HostConfig { node: "node".into(), timeout: Duration::from_secs(20) },
+        host: HostConfig { node: "node".into(), timeout: Duration::from_secs(20), ..HostConfig::default() },
         out: out.clone(),
         quiet: true,
         budget_usd: None,
@@ -95,7 +95,7 @@ fn every_arm_is_scored_by_the_independent_oracle() {
 #[test]
 #[ignore = "needs Node.js and `npm ci` in examples/customers-app"]
 fn an_unchanged_project_never_achieves_a_goal() {
-    let host = HostConfig { node: "node".into(), timeout: Duration::from_secs(20) };
+    let host = HostConfig { node: "node".into(), timeout: Duration::from_secs(20), ..HostConfig::default() };
     for id in ["billing-migration", "replace-lookup", "discover-readback"] {
         let task = read_arm_task(&root().join("fixtures/appport-tasks").join(id)).unwrap();
         assert!(task.goal_check.is_some(), "{id} has a goal check");

@@ -28,11 +28,32 @@ pub struct HostConfig {
     pub node: PathBuf,
     /// Longest wait for one response.
     pub timeout: Duration,
+    /// Environment variables never passed to the application (provider
+    /// credentials: the application runs code a model wrote).
+    pub hidden_env: Vec<String>,
 }
 
 impl Default for HostConfig {
     fn default() -> Self {
-        HostConfig { node: PathBuf::from("node"), timeout: Duration::from_secs(20) }
+        HostConfig { node: PathBuf::from("node"), timeout: Duration::from_secs(20), hidden_env: default_hidden_env() }
+    }
+}
+
+/// [`agent_model::gateway::CREDENTIAL_ENV`], owned.
+pub fn default_hidden_env() -> Vec<String> {
+    agent_model::gateway::CREDENTIAL_ENV.iter().map(|s| s.to_string()).collect()
+}
+
+impl HostConfig {
+    /// This configuration, also hiding every credential variable `model` names.
+    pub fn hiding(&self, model: &agent_model::ModelConfig) -> HostConfig {
+        let mut config = self.clone();
+        for name in agent_model::gateway::credential_env(model) {
+            if !config.hidden_env.contains(&name) {
+                config.hidden_env.push(name);
+            }
+        }
+        config
     }
 }
 
@@ -72,7 +93,13 @@ impl Host {
         permissions: &[String],
     ) -> Result<Host, String> {
         let script = script_path().map_err(|e| format!("cannot write the IPC host: {e}"))?;
-        let mut child = Command::new(&config.node)
+        let mut command = Command::new(&config.node);
+        for name in
+            config.hidden_env.iter().map(String::as_str).chain(agent_model::gateway::CREDENTIAL_ENV.iter().copied())
+        {
+            command.env_remove(name);
+        }
+        let mut child = command
             .arg(script)
             .arg(root)
             .arg(&entry.module)

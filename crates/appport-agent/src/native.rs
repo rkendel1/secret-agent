@@ -212,6 +212,8 @@ struct Native<'a> {
     baselines: BTreeMap<String, Session>,
     applied: Option<(String, edit::Applied, Vec<String>)>,
     report: NativeReport,
+    /// A rollback that did not check out: the run stops, whatever the model says next.
+    rollback_failure: Option<String>,
 }
 
 impl Native<'_> {
@@ -412,8 +414,12 @@ impl Native<'_> {
         if verdict.accepted {
             self.applied = Some((target, applied, changed));
         } else {
-            edit::rollback(&self.project.root, applied);
-            self.report.rollbacks += 1;
+            let undone = edit::rollback(&self.project.root, applied);
+            if undone.verified() {
+                self.report.rollbacks += 1;
+            } else {
+                self.rollback_failure = Some(undone.describe());
+            }
         }
         self.report.proposals.push(proposal);
         Ok(summary)
@@ -421,8 +427,12 @@ impl Native<'_> {
 
     fn undo(&mut self) {
         if let Some((_, applied, _)) = self.applied.take() {
-            edit::rollback(&self.project.root, applied);
-            self.report.rollbacks += 1;
+            let undone = edit::rollback(&self.project.root, applied);
+            if undone.verified() {
+                self.report.rollbacks += 1;
+            } else {
+                self.rollback_failure = Some(undone.describe());
+            }
         }
     }
 }
@@ -445,6 +455,7 @@ pub fn run_native(options: &NativeOptions) -> Result<NativeReport, String> {
         application_runs: 1,
         baselines: BTreeMap::new(),
         applied: None,
+        rollback_failure: None,
         report: NativeReport {
             outcome: "incomplete".into(),
             reason: None,
@@ -547,13 +558,17 @@ pub fn run_native(options: &NativeOptions) -> Result<NativeReport, String> {
             result_bytes: result_text.len(),
             duration_ms: began.elapsed().as_millis() as u64,
         });
-        if finished {
+        if finished || state.rollback_failure.is_some() {
             break;
         }
         prompt = format!("Result of {action}:\n```json\n{result_text}\n```");
     }
     if !finished {
         state.undo();
+    }
+    if let Some(problem) = state.rollback_failure.take() {
+        state.report.outcome = "rollback-failed".into();
+        state.report.reason = Some(format!("a change could not be undone and checked: {problem}"));
     }
     let mut report = state.report;
     report.model_calls = report.turns.len();
