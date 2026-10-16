@@ -52,6 +52,15 @@ appport-agent run  --project <dir> --intent "..." --config <model.json> --report
 
 `run` changes the project in place. It accepts a change only with evidence the goal was achieved, and its exit status says what happened: 0 accepted, 1 rejected, 3 declined, 4 provider failure, 5 the project needs attention. See [docs/agent-loop.md](docs/agent-loop.md#outcomes-and-exit-status). For what it can be trusted with today, see [docs/production-readiness.md](docs/production-readiness.md).
 
+## Experiment with agent strategies
+
+The coding loop's context selection and recovery are interchangeable strategies, compared on identical tasks against a baseline. The planner, the edit boundary and the tests stay the authorities. See [docs/agent-research/](docs/agent-research/README.md), including a source-grounded comparison of eight open-source coding agents.
+
+```sh
+appport-agent experiment --spec examples/experiments/context-ablation.json        # offline, scripted
+appport-agent experiment --spec examples/experiments/gateway-free-context.json    # free Vercel AI Gateway model
+```
+
 ## Develop
 
 ```sh

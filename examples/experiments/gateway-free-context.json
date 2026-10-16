@@ -1,0 +1,12 @@
+{
+  "schema": "secret-agent.experiment/1",
+  "id": "gateway-free-context",
+  "suite": "fixtures/coding",
+  "model": { "config": "examples/models/vercel-gateway.json" },
+  "arms": [{ "id": "baseline", "context": "observed", "recovery": "feedback" }],
+  "ablation": { "from": "baseline", "vary": "context", "values": ["minimal", "dependency-aware", "appport-aware"] },
+  "trials": 3,
+  "maxAttempts": 3,
+  "freeGateway": true,
+  "limits": { "maxModelCalls": 150, "maxMinutes": 60 }
+}

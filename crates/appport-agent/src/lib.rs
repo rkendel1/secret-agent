@@ -13,10 +13,12 @@ pub mod coding;
 pub mod collect;
 pub mod edit;
 pub mod eval;
+pub mod experiment;
 pub mod goal;
 pub mod host;
 pub mod native;
 pub mod report;
 pub mod run;
+pub mod strategy;
 
 pub use run::{run, RunOptions};

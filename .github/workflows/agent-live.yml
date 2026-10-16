@@ -21,8 +21,11 @@ on:
         type: boolean
         default: false
       legs:
-        description: Which legs to run (comma-separated) - arms, gateway, coding
+        description: Which legs to run (comma-separated) - arms, gateway, coding, experiment
         default: arms
+      experiment_spec:
+        description: Experiment leg - the specification to run (its model must be a free gateway model)
+        default: examples/experiments/gateway-free-context.json
       gateway_model:
         description: Free Vercel AI Gateway model (must be on the allowlist in crates/agent-model/src/gateway.rs)
         default: nvidia/nemotron-3.5-lightning-free
@@ -210,3 +213,52 @@ jobs:
             target/coding-live/*/*/run.jsonl
             target/coding-live/*/*/accepted.diff
             target/coding-live/*/*/hidden.txt
+
+  experiment:
+    # A strategy comparison or ablation from an experiment specification
+    # (docs/agent-research/experiments.md). The harness runs the free-model
+    # preflight itself whenever the model is at the gateway, and no trial runs if it fails.
+    needs: preflight
+    if: inputs.mode != 'preflight' && contains(inputs.legs, 'experiment')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      SPEC: ${{ inputs.experiment_spec }}
+      TRIALS: ${{ inputs.mode == 'comparison' && inputs.trials || '1' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: npm ci --prefix examples/customers-app --no-audit --no-fund
+      - run: scripts/check-coding-fixtures.sh
+      - run: cargo build --quiet -p appport-agent
+      - name: Experiment (preflight, then trials)
+        env:
+          AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
+        run: |
+          target/debug/appport-agent experiment --spec "$SPEC" --model "$MODEL" --trials "$TRIALS" \
+            --out target/experiment-live --quiet
+      - name: Results
+        if: always()
+        run: |
+          for f in target/experiment-live/preflight.txt target/experiment-live/coding-eval.md; do
+            [ -f "$f" ] && { cat "$f"; cat "$f" >> "$GITHUB_STEP_SUMMARY"; }
+          done
+          true
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-experiment
+          if-no-files-found: ignore
+          path: |
+            target/experiment-live/experiment.json
+            target/experiment-live/preflight.*
+            target/experiment-live/coding-eval.*
+            target/experiment-live/*/*/trial.json
+            target/experiment-live/*/*/report.json
+            target/experiment-live/*/*/run.jsonl
+            target/experiment-live/*/*/*.diff
+            target/experiment-live/*/*/hidden.txt
