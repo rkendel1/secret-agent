@@ -1,0 +1,30 @@
+{
+  "task": "unverifiable-contract",
+  "expect": "limitation",
+  "arm": "A-bare",
+  "trial": 1,
+  "order": 2,
+  "claim": "limitation",
+  "category": "correct-limitation",
+  "reason": "refused to plan: contract.unverifiable: the contract gives no way to verify the behaviour of customers.lookup@1: its effect is not declared, no observation depends on it, and no declared verification method relies on it. Declare `effect: \"observation\"` on the capabilities that only read, or `integration.verify` methods that re-read through customers.lookup@1",
+  "oracle": {
+    "changedFiles": [],
+    "failedChecks": []
+  },
+  "modelCalls": 0,
+  "inputTokens": 0,
+  "outputTokens": 0,
+  "tokensEstimated": false,
+  "costUsd": 0.0,
+  "toolCalls": 0,
+  "appportBytes": 0,
+  "proposals": 0,
+  "acceptedOnFirstProposal": false,
+  "rejectedProposals": 0,
+  "rollbacks": 0,
+  "boundaryViolations": 0,
+  "contractChangeAttempts": 0,
+  "unusableResponses": 0,
+  "applicationRuns": 0,
+  "wallMs": 448
+}

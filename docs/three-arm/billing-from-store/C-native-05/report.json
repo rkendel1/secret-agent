@@ -1,0 +1,74 @@
+{
+  "outcome": "limitation",
+  "reason": "This change cannot be made safely without changing the contract, and it could not be verified even if it were made.\n\n1. The contract requires the legacy lookup. billing.contact@1 lists `requires: customers.lookup@1` as `required: true`, with relationship `observes`. Reading the customer store directly would drop that declared dependency. That is a contract change, and I am not allowed to make one.\n\n2. There is no store to switch to. customers.lookup reads the legacy CRM export (`readExport()` in src/legacy/crm.mjs). No module or capability I found offers a separate customer store. A direct read would just reach the same legacy file from another module. That module is also outside the one I am allowed to change.\n\n3. The change cannot be verified. The contract declares no verification methods and marks its evidence as `establishable: false`. So I could not show that a new read path keeps today's answers. That covers the customerId/name/email mapping from cust_id/full_name/mail, and NOT_FOUND for unknown customer IDs.\n\nTo go ahead, the contract would need to:\n- declare the customer store as a capability or requirement in place of customers.lookup@1;\n- add verification methods, such as recorded examples covering a known customer and NOT_FOUND.\n\nAfter that, this handler can be reimplemented and checked against those methods.",
+  "model": "anthropic:claude-opus-5-5 via https://api.anthropic.com/v1/messages",
+  "turns": [
+    {
+      "turn": 1,
+      "usage": {
+        "input_tokens": 640,
+        "output_tokens": 81,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "inspect",
+      "resultBytes": 2863,
+      "durationMs": 1854
+    },
+    {
+      "turn": 2,
+      "usage": {
+        "input_tokens": 1793,
+        "output_tokens": 136,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "read",
+      "resultBytes": 405,
+      "durationMs": 2589
+    },
+    {
+      "turn": 3,
+      "usage": {
+        "input_tokens": 2102,
+        "output_tokens": 243,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "read",
+      "resultBytes": 562,
+      "durationMs": 7225
+    },
+    {
+      "turn": 4,
+      "usage": {
+        "input_tokens": 2614,
+        "output_tokens": 645,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "limitation",
+      "resultBytes": 22,
+      "durationMs": 8080
+    }
+  ],
+  "toolCalls": {
+    "inspect": 1,
+    "limitation": 1,
+    "read": 2
+  },
+  "proposals": [],
+  "refusedCompletions": 0,
+  "modelCalls": 4,
+  "inputTokens": 7149,
+  "outputTokens": 1105,
+  "tokensEstimated": false,
+  "discoveryBytes": 2863,
+  "toolResultBytes": 3852,
+  "applicationRuns": 1,
+  "envelopes": 1,
+  "rollbacks": 0,
+  "acceptedFiles": [],
+  "wallMs": 20173,
+  "startedAt": "2026-10-16T00:42:50.407Z"
+}

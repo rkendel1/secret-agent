@@ -1,0 +1,111 @@
+{
+  "outcome": "limitation",
+  "reason": "billing.contact@1 cannot be switched to the customer store (src/store.mjs) while keeping every answer it gives today, and the switch could not be verified.\n\n1) The contract would have to change. It declares a required dependency on customers.lookup@1 (requires: { id: 'customer', relationship: 'observes', target: 'customers.lookup@1', required: true }). Reading the store directly removes that declared dependency, so the contract would no longer describe the implementation. That needs a contract change, and I am not allowed to make one.\n\n2) Some answers would change. Today the handler calls customers.lookup, which reads the legacy CRM export on every call (readExport().find(...)). The store is only seeded from that export at start-up. After that, customers.register writes to the store, never to the export. So:\n- A customer registered at runtime gets NOT_FOUND today, but would get a contact from the store.\n- If the export changes while the app runs, the two sources drift apart.\nThe store is the intended system of record, so the new answers are arguably more correct, but they are different answers.\n\n3) There is no way to check the change. billing.contact@1 declares no verification methods (verification: [], evidence.methods: [], establishable: false). No declared check could confirm the rewritten handler matches the current behaviour.\n\nWhat would unblock this: the contract owner updates billing.contact's contract to observe the customer store instead of customers.lookup@1, and decides whether runtime-registered customers should resolve. Adding a verification method would also let a replacement be checked. Alternatively, customers.lookup@1 itself could be moved onto the store, with that behavioural change accepted. Once the contract is updated, the handler change is trivial:\nconst c = getCustomer(input.customerId); if (!c) throw errors.notFound(...); return { customerId, name, email }.",
+  "model": "anthropic:claude-opus-5-5 via https://api.anthropic.com/v1/messages",
+  "turns": [
+    {
+      "turn": 1,
+      "usage": {
+        "input_tokens": 640,
+        "output_tokens": 76,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "inspect",
+      "resultBytes": 2863,
+      "durationMs": 1978
+    },
+    {
+      "turn": 2,
+      "usage": {
+        "input_tokens": 1788,
+        "output_tokens": 179,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "read",
+      "resultBytes": 405,
+      "durationMs": 6309
+    },
+    {
+      "turn": 3,
+      "usage": {
+        "input_tokens": 2140,
+        "output_tokens": 110,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "read",
+      "resultBytes": 562,
+      "durationMs": 2437
+    },
+    {
+      "turn": 4,
+      "usage": {
+        "input_tokens": 2519,
+        "output_tokens": 202,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "list_capabilities",
+      "resultBytes": 1614,
+      "durationMs": 3517
+    },
+    {
+      "turn": 5,
+      "usage": {
+        "input_tokens": 3311,
+        "output_tokens": 131,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "inspect",
+      "resultBytes": 2560,
+      "durationMs": 2395
+    },
+    {
+      "turn": 6,
+      "usage": {
+        "input_tokens": 4404,
+        "output_tokens": 77,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "read",
+      "resultBytes": 1059,
+      "durationMs": 2244
+    },
+    {
+      "turn": 7,
+      "usage": {
+        "input_tokens": 4933,
+        "output_tokens": 1072,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "limitation",
+      "resultBytes": 22,
+      "durationMs": 11503
+    }
+  ],
+  "toolCalls": {
+    "inspect": 2,
+    "limitation": 1,
+    "list_capabilities": 1,
+    "read": 3
+  },
+  "proposals": [],
+  "refusedCompletions": 0,
+  "modelCalls": 7,
+  "inputTokens": 19735,
+  "outputTokens": 1847,
+  "tokensEstimated": false,
+  "discoveryBytes": 7037,
+  "toolResultBytes": 9085,
+  "applicationRuns": 2,
+  "envelopes": 2,
+  "rollbacks": 0,
+  "acceptedFiles": [],
+  "wallMs": 30800,
+  "startedAt": "2026-10-16T00:34:12.067Z"
+}

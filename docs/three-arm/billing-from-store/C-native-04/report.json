@@ -1,0 +1,62 @@
+{
+  "outcome": "limitation",
+  "reason": "I made no change to billing.contact@1 because the switch could not be verified and would conflict with its contract.\n\n1. **It cannot be verified.** The contract declares no verification methods (`verification: []`, `evidence.methods: []`) and marks evidence as not establishable (`establishable: false`). Nothing could confirm that reading the customer store directly keeps every answer it gives today, including the NOT_FOUND cases and the exact name and email values.\n\n2. **It would contradict the contract.** The contract says the capability depends on customers.lookup@1 (`requires: [{id: 'customer', relationship: 'observes', target: customers.lookup@1, required: true}]`). The current handler (`src/handlers/billing.contact.mjs`) honours this by calling `lookupCustomer`. Reading the store directly would break that declared dependency, which needs a contract change. I am not allowed to make contract changes.\n\nTo make this possible:\n- Change the contract to drop or replace the customers.lookup@1 requirement.\n- Add verification for billing.contact@1 that compares outputs, for example example-based checks for known customer IDs plus a NOT_FOUND case.\n\nWith both in place, the change could be proposed and checked.",
+  "model": "anthropic:claude-opus-5-5 via https://api.anthropic.com/v1/messages",
+  "turns": [
+    {
+      "turn": 1,
+      "usage": {
+        "input_tokens": 640,
+        "output_tokens": 54,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "inspect",
+      "resultBytes": 2863,
+      "durationMs": 1868
+    },
+    {
+      "turn": 2,
+      "usage": {
+        "input_tokens": 1765,
+        "output_tokens": 89,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "read",
+      "resultBytes": 405,
+      "durationMs": 2490
+    },
+    {
+      "turn": 3,
+      "usage": {
+        "input_tokens": 2027,
+        "output_tokens": 768,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "limitation",
+      "resultBytes": 22,
+      "durationMs": 8447
+    }
+  ],
+  "toolCalls": {
+    "inspect": 1,
+    "limitation": 1,
+    "read": 1
+  },
+  "proposals": [],
+  "refusedCompletions": 0,
+  "modelCalls": 3,
+  "inputTokens": 4432,
+  "outputTokens": 911,
+  "tokensEstimated": false,
+  "discoveryBytes": 2863,
+  "toolResultBytes": 3290,
+  "applicationRuns": 1,
+  "envelopes": 1,
+  "rollbacks": 0,
+  "acceptedFiles": [],
+  "wallMs": 13265,
+  "startedAt": "2026-10-16T00:39:31.327Z"
+}

@@ -1,0 +1,62 @@
+{
+  "outcome": "limitation",
+  "reason": "I did not change customers.lookup@1 because the change could not be verified.\n\nThe handler (src/handlers/customers.lookup.mjs) currently reads the legacy CRM export through src/legacy/crm.mjs and maps its fields onto the contract's output: cust_id, full_name, mail, level via TIERS, and created. Pointing it at the customer store would mean recreating that mapping. That includes giving `tier` the right value from the enum standard/gold/platinum, keeping `since` an ISO-8601 date-time, and keeping the not-found behaviour.\n\nThe contract gives no way to check that the new version matches the old one:\n- It declares no verification methods, and its evidence is marked not establishable.\n- Its effect is unknown, so it cannot be treated as an observation. That means I cannot call it to record current answers to compare a replacement against.\n- A proposal could be checked against the output schema's shape, but not for the same results, such as the same tier or date for the same customer.\n\nWhat would unblock this: the contract owner adds verification for customers.lookup@1, for example example cases or a reference comparison, and declares its effect, ideally as observation. With that in place, the swap to the customer store can be proposed and checked.",
+  "model": "anthropic:claude-opus-5-5 via https://api.anthropic.com/v1/messages",
+  "turns": [
+    {
+      "turn": 1,
+      "usage": {
+        "input_tokens": 622,
+        "output_tokens": 77,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "inspect",
+      "resultBytes": 3020,
+      "durationMs": 1951
+    },
+    {
+      "turn": 2,
+      "usage": {
+        "input_tokens": 1811,
+        "output_tokens": 290,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "read",
+      "resultBytes": 562,
+      "durationMs": 7343
+    },
+    {
+      "turn": 3,
+      "usage": {
+        "input_tokens": 2370,
+        "output_tokens": 556,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "limitation",
+      "resultBytes": 22,
+      "durationMs": 6642
+    }
+  ],
+  "toolCalls": {
+    "inspect": 1,
+    "limitation": 1,
+    "read": 1
+  },
+  "proposals": [],
+  "refusedCompletions": 0,
+  "modelCalls": 3,
+  "inputTokens": 4803,
+  "outputTokens": 923,
+  "tokensEstimated": false,
+  "discoveryBytes": 3020,
+  "toolResultBytes": 3604,
+  "applicationRuns": 1,
+  "envelopes": 1,
+  "rollbacks": 0,
+  "acceptedFiles": [],
+  "wallMs": 16372,
+  "startedAt": "2026-10-16T00:42:15.278Z"
+}

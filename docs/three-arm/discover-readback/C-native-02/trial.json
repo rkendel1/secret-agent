@@ -1,0 +1,91 @@
+{
+  "task": "discover-readback",
+  "expect": "verified-change",
+  "arm": "C-native",
+  "trial": 2,
+  "order": 3,
+  "claim": "accepted",
+  "category": "verified-success",
+  "reason": "The faulty capability was customers.lookup@1 (src/handlers/customers.lookup.mjs). It read the static legacy CRM export (src/legacy/crm.mjs), while customers.register@1 writes to the application store (src/store.mjs). That store is the system of record for urn:example:customers:customer and is seeded from the same export at start-up, so newly registered customers could never be read back. Lookup now reads from the store via getCustomer and returns the same five contract fields. It still fails with NOT_FOUND for unknown IDs. Only the lookup handler changed; no contract or test was modified. The proposal passed all verification checks: unchanged contract digest, conforming outputs, only declared failures, and unchanged answers on existing state for customers.lookup@1 and billing.contact@1. The declared customer-readable and registered-event verification of customers.register@1 now confirms. One residual point: lookup returns a fresh object rather than the store's stored reference, so callers cannot mutate store state through the result.",
+  "oracle": {
+    "changedFiles": [
+      "src/handlers/customers.lookup.mjs"
+    ],
+    "verified": true,
+    "failedChecks": [],
+    "verdict": {
+      "accepted": true,
+      "checks": [
+        {
+          "code": "edit.boundary",
+          "rule": "only the target's implementation module changes",
+          "status": "pass"
+        },
+        {
+          "code": "runtime.load",
+          "rule": "the application loads and answers appport.manifest@1",
+          "status": "pass"
+        },
+        {
+          "code": "contract.identity",
+          "rule": "the published contract is unchanged (contractDigest sha256:4f6660b5135b)",
+          "status": "pass",
+          "notes": [
+            "contractDigest sha256:4f6660b5135b0053debb5f16c4ce458cae6d62832a841672483b69e880c997ca"
+          ]
+        },
+        {
+          "code": "contract.valid",
+          "rule": "the published contract has no validation errors",
+          "status": "pass"
+        },
+        {
+          "code": "output.conformance",
+          "rule": "every output observed conforms to its declared output schema",
+          "status": "pass",
+          "notes": [
+            "9 output(s) conform"
+          ]
+        },
+        {
+          "code": "failures.declared",
+          "rule": "customers.lookup@1 fails only with its declared failure codes (NOT_FOUND)",
+          "status": "pass"
+        },
+        {
+          "code": "behavior.regression",
+          "rule": "answers on existing state are unchanged for customers.lookup@1, billing.contact@1",
+          "status": "pass",
+          "notes": [
+            "8 answer(s) on existing state unchanged"
+          ]
+        },
+        {
+          "code": "verification",
+          "rule": "customers.register@1: declared verification (customer-readable, registered-event) is not contradicted and every state method confirms",
+          "status": "pass",
+          "notes": [
+            "customers.register@1#customer-readable confirmed (establishes)",
+            "customers.register@1#registered-event confirmed (corroborates)"
+          ]
+        }
+      ]
+    }
+  },
+  "modelCalls": 8,
+  "inputTokens": 30570,
+  "outputTokens": 1274,
+  "tokensEstimated": false,
+  "costUsd": 0.14776,
+  "toolCalls": 8,
+  "appportBytes": 10426,
+  "proposals": 1,
+  "acceptedOnFirstProposal": true,
+  "rejectedProposals": 0,
+  "rollbacks": 0,
+  "boundaryViolations": 0,
+  "contractChangeAttempts": 0,
+  "unusableResponses": 0,
+  "applicationRuns": 4,
+  "wallMs": 24509
+}

@@ -1,0 +1,84 @@
+{
+  "task": "billing-from-store",
+  "expect": "verified-change",
+  "arm": "A-bare",
+  "trial": 3,
+  "order": 2,
+  "claim": "rejected",
+  "category": "unverified",
+  "oracle": {
+    "changedFiles": [],
+    "verified": false,
+    "failedChecks": [
+      "edit.boundary"
+    ],
+    "verdict": {
+      "accepted": false,
+      "checks": [
+        {
+          "code": "edit.boundary",
+          "rule": "only the target's implementation module changes",
+          "status": "fail",
+          "violations": [
+            "the change touched no file"
+          ]
+        },
+        {
+          "code": "runtime.load",
+          "rule": "the application loads and answers appport.manifest@1",
+          "status": "pass"
+        },
+        {
+          "code": "contract.identity",
+          "rule": "the published contract is unchanged (contractDigest sha256:4f6660b5135b)",
+          "status": "pass",
+          "notes": [
+            "contractDigest sha256:4f6660b5135b0053debb5f16c4ce458cae6d62832a841672483b69e880c997ca"
+          ]
+        },
+        {
+          "code": "contract.valid",
+          "rule": "the published contract has no validation errors",
+          "status": "pass"
+        },
+        {
+          "code": "output.conformance",
+          "rule": "every output observed conforms to its declared output schema",
+          "status": "pass",
+          "notes": [
+            "4 output(s) conform"
+          ]
+        },
+        {
+          "code": "failures.declared",
+          "rule": "billing.contact@1 fails only with its declared failure codes (NOT_FOUND)",
+          "status": "pass"
+        },
+        {
+          "code": "behavior.regression",
+          "rule": "answers on existing state are unchanged for billing.contact@1",
+          "status": "pass",
+          "notes": [
+            "4 answer(s) on existing state unchanged"
+          ]
+        }
+      ]
+    }
+  },
+  "modelCalls": 3,
+  "inputTokens": 1618,
+  "outputTokens": 2651,
+  "tokensEstimated": false,
+  "costUsd": 0.059491999999999996,
+  "toolCalls": 0,
+  "appportBytes": 0,
+  "proposals": 1,
+  "acceptedOnFirstProposal": false,
+  "rejectedProposals": 1,
+  "rollbacks": 1,
+  "boundaryViolations": 0,
+  "contractChangeAttempts": 0,
+  "unusableResponses": 2,
+  "applicationRuns": 3,
+  "wallMs": 33024
+}

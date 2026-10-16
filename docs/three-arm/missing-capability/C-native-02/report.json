@@ -1,0 +1,49 @@
+{
+  "outcome": "limitation",
+  "reason": "The application has no capability for deleting a customer record. It publishes only appport.manifest@1, appport.ping@1, billing.contact@1, customers.list@1, customers.lookup@1 (all read-only) and customers.register@1 (creates customers). I can only replace the implementation of an existing capability. I cannot add a capability or change a contract, so changing any existing implementation cannot meet this goal. Repurposing one would also break its contract: for example, making customers.register@1 delete records. Meeting the goal needs a new consequential capability, such as customers.delete@1. Its contract must be defined first: the input (the customer id), the output, the required authorization (presumably customers.write or a new customers.delete scope), declared failures (for example, customer not found), and verification methods. Its effect on dependents must also be decided, since billing.contact@1 reads customer records. Once that contract exists in the application, its implementation can be proposed and verified.",
+  "model": "anthropic:claude-opus-5-5 via https://api.anthropic.com/v1/messages",
+  "turns": [
+    {
+      "turn": 1,
+      "usage": {
+        "input_tokens": 604,
+        "output_tokens": 43,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "list_capabilities",
+      "resultBytes": 1614,
+      "durationMs": 5266
+    },
+    {
+      "turn": 2,
+      "usage": {
+        "input_tokens": 1236,
+        "output_tokens": 407,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "limitation",
+      "resultBytes": 22,
+      "durationMs": 6946
+    }
+  ],
+  "toolCalls": {
+    "limitation": 1,
+    "list_capabilities": 1
+  },
+  "proposals": [],
+  "refusedCompletions": 0,
+  "modelCalls": 2,
+  "inputTokens": 1840,
+  "outputTokens": 450,
+  "tokensEstimated": false,
+  "discoveryBytes": 1614,
+  "toolResultBytes": 1636,
+  "applicationRuns": 2,
+  "envelopes": 2,
+  "rollbacks": 0,
+  "acceptedFiles": [],
+  "wallMs": 12678,
+  "startedAt": "2026-10-16T00:32:39.206Z"
+}

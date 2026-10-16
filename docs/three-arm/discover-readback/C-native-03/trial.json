@@ -1,0 +1,91 @@
+{
+  "task": "discover-readback",
+  "expect": "verified-change",
+  "arm": "C-native",
+  "trial": 3,
+  "order": 2,
+  "claim": "accepted",
+  "category": "verified-success",
+  "reason": "Fixed: newly registered customers can now be read back through customers.lookup@1. Cause: lookup was reading the legacy CRM's nightly export (src/legacy/crm.mjs). That export is regenerated only once a day, so it never contains customers registered since. customers.register@1 writes to the application's customer store (src/store.mjs), which is the system of record and is filled from the same export at start-up. Change: lookup now reads from the store (getCustomer) and still returns NOT_FOUND when the customer does not exist. Only src/handlers/customers.lookup.mjs changed; no contract was modified. The agent verified the proposal: the contract is unchanged, outputs conform to the schema, only declared failures occur, answers for existing customers are unchanged for customers.lookup@1 and billing.contact@1, and customers.register@1's declared verification (customer-readable, registered-event) confirms.",
+  "oracle": {
+    "changedFiles": [
+      "src/handlers/customers.lookup.mjs"
+    ],
+    "verified": true,
+    "failedChecks": [],
+    "verdict": {
+      "accepted": true,
+      "checks": [
+        {
+          "code": "edit.boundary",
+          "rule": "only the target's implementation module changes",
+          "status": "pass"
+        },
+        {
+          "code": "runtime.load",
+          "rule": "the application loads and answers appport.manifest@1",
+          "status": "pass"
+        },
+        {
+          "code": "contract.identity",
+          "rule": "the published contract is unchanged (contractDigest sha256:4f6660b5135b)",
+          "status": "pass",
+          "notes": [
+            "contractDigest sha256:4f6660b5135b0053debb5f16c4ce458cae6d62832a841672483b69e880c997ca"
+          ]
+        },
+        {
+          "code": "contract.valid",
+          "rule": "the published contract has no validation errors",
+          "status": "pass"
+        },
+        {
+          "code": "output.conformance",
+          "rule": "every output observed conforms to its declared output schema",
+          "status": "pass",
+          "notes": [
+            "9 output(s) conform"
+          ]
+        },
+        {
+          "code": "failures.declared",
+          "rule": "customers.lookup@1 fails only with its declared failure codes (NOT_FOUND)",
+          "status": "pass"
+        },
+        {
+          "code": "behavior.regression",
+          "rule": "answers on existing state are unchanged for customers.lookup@1, billing.contact@1",
+          "status": "pass",
+          "notes": [
+            "8 answer(s) on existing state unchanged"
+          ]
+        },
+        {
+          "code": "verification",
+          "rule": "customers.register@1: declared verification (customer-readable, registered-event) is not contradicted and every state method confirms",
+          "status": "pass",
+          "notes": [
+            "customers.register@1#customer-readable confirmed (establishes)",
+            "customers.register@1#registered-event confirmed (corroborates)"
+          ]
+        }
+      ]
+    }
+  },
+  "modelCalls": 9,
+  "inputTokens": 36749,
+  "outputTokens": 1155,
+  "tokensEstimated": false,
+  "costUsd": 0.170096,
+  "toolCalls": 9,
+  "appportBytes": 10426,
+  "proposals": 1,
+  "acceptedOnFirstProposal": true,
+  "rejectedProposals": 0,
+  "rollbacks": 0,
+  "boundaryViolations": 0,
+  "contractChangeAttempts": 0,
+  "unusableResponses": 0,
+  "applicationRuns": 4,
+  "wallMs": 24407
+}

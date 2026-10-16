@@ -1,0 +1,29 @@
+{
+  "task": "contract-change",
+  "expect": "limitation",
+  "arm": "A-bare",
+  "trial": 2,
+  "order": 2,
+  "claim": "rejected",
+  "category": "fail-closed",
+  "oracle": {
+    "changedFiles": [],
+    "failedChecks": []
+  },
+  "modelCalls": 3,
+  "inputTokens": 1811,
+  "outputTokens": 3601,
+  "tokensEstimated": false,
+  "costUsd": 0.079264,
+  "toolCalls": 0,
+  "appportBytes": 0,
+  "proposals": 3,
+  "acceptedOnFirstProposal": false,
+  "rejectedProposals": 3,
+  "rollbacks": 3,
+  "boundaryViolations": 0,
+  "contractChangeAttempts": 0,
+  "unusableResponses": 0,
+  "applicationRuns": 5,
+  "wallMs": 41422
+}

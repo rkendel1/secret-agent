@@ -1,0 +1,49 @@
+{
+  "outcome": "limitation",
+  "reason": "Returning a phone number from customers.lookup@1 would require a contract change. The contract declares exactly five outputs: /customerId, /name, /email, /tier and /since. There is no phone field. The rule output.return-no-more says the capability may 'return only what the current output schema allows', so adding a /phone output to the handler (src/handlers/customers.lookup.mjs) would break the contract. That makes this a contract change, not an implementation change. It would need a new output field with its type, whether it is required, its format and its concept, which probably means a new version (customers.lookup@2) so the dependents billing.contact@1 and customers.register@1 are not affected. A separate problem is that the contract declares no verification methods (evidence.establishable is false), so even an allowed implementation change here could not be verified. Suggested next step: whoever owns the contract defines the phone output, likely in a new capability version, and then the handler can be updated against that contract.",
+  "model": "anthropic:claude-opus-5-5 via https://api.anthropic.com/v1/messages",
+  "turns": [
+    {
+      "turn": 1,
+      "usage": {
+        "input_tokens": 616,
+        "output_tokens": 111,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "inspect",
+      "resultBytes": 3894,
+      "durationMs": 2427
+    },
+    {
+      "turn": 2,
+      "usage": {
+        "input_tokens": 2170,
+        "output_tokens": 418,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "limitation",
+      "resultBytes": 22,
+      "durationMs": 6045
+    }
+  ],
+  "toolCalls": {
+    "inspect": 1,
+    "limitation": 1
+  },
+  "proposals": [],
+  "refusedCompletions": 0,
+  "modelCalls": 2,
+  "inputTokens": 2786,
+  "outputTokens": 529,
+  "tokensEstimated": false,
+  "discoveryBytes": 3894,
+  "toolResultBytes": 3916,
+  "applicationRuns": 1,
+  "envelopes": 1,
+  "rollbacks": 0,
+  "acceptedFiles": [],
+  "wallMs": 8917,
+  "startedAt": "2026-10-16T00:43:27.864Z"
+}

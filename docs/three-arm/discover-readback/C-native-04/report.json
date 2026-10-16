@@ -1,0 +1,209 @@
+{
+  "outcome": "accepted",
+  "reason": "Root cause: customers.lookup@1 (src/handlers/customers.lookup.mjs) read the legacy CRM nightly export via src/legacy/crm.mjs. That export is regenerated only once a day, so customers created by customers.register@1 were missing from it until the next export. customers.register@1 writes to src/store.mjs, which is the system of record for urn:example:customers:customer and is seeded from the same export at start-up. Fix: lookup now reads from the store with getCustomer and still raises NOT_FOUND for unknown ids. No contract, test or other module was changed. The verifier passed every check it reported: the contract digest is unchanged, outputs conform to their schemas, only the declared failure code occurs, and answers on existing state for customers.lookup@1 and billing.contact@1 are unchanged. customers.register@1 is now verified through its customer-readable state method, with its registered-event check not contradicted.",
+  "model": "anthropic:claude-opus-5-5 via https://api.anthropic.com/v1/messages",
+  "turns": [
+    {
+      "turn": 1,
+      "usage": {
+        "input_tokens": 628,
+        "output_tokens": 43,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "list_capabilities",
+      "resultBytes": 1614,
+      "durationMs": 1914
+    },
+    {
+      "turn": 2,
+      "usage": {
+        "input_tokens": 1260,
+        "output_tokens": 41,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "inspect",
+      "resultBytes": 3894,
+      "durationMs": 1731
+    },
+    {
+      "turn": 3,
+      "usage": {
+        "input_tokens": 2744,
+        "output_tokens": 46,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "read",
+      "resultBytes": 562,
+      "durationMs": 1692
+    },
+    {
+      "turn": 4,
+      "usage": {
+        "input_tokens": 3059,
+        "output_tokens": 55,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "inspect",
+      "resultBytes": 4918,
+      "durationMs": 2126
+    },
+    {
+      "turn": 5,
+      "usage": {
+        "input_tokens": 4882,
+        "output_tokens": 81,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "read",
+      "resultBytes": 735,
+      "durationMs": 2527
+    },
+    {
+      "turn": 6,
+      "usage": {
+        "input_tokens": 5277,
+        "output_tokens": 37,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "read",
+      "resultBytes": 1059,
+      "durationMs": 5200
+    },
+    {
+      "turn": 7,
+      "usage": {
+        "input_tokens": 5766,
+        "output_tokens": 150,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "read",
+      "resultBytes": 486,
+      "durationMs": 2591
+    },
+    {
+      "turn": 8,
+      "usage": {
+        "input_tokens": 6152,
+        "output_tokens": 586,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "propose",
+      "resultBytes": 1545,
+      "durationMs": 6018
+    },
+    {
+      "turn": 9,
+      "usage": {
+        "input_tokens": 7299,
+        "output_tokens": 333,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "complete",
+      "resultBytes": 22,
+      "durationMs": 4387
+    }
+  ],
+  "toolCalls": {
+    "complete": 1,
+    "inspect": 2,
+    "list_capabilities": 1,
+    "propose": 1,
+    "read": 4
+  },
+  "proposals": [
+    {
+      "target": "customers.lookup@1",
+      "files": [
+        "src/handlers/customers.lookup.mjs"
+      ],
+      "accepted": true,
+      "outsideBoundary": false,
+      "contractChanged": false,
+      "verdict": {
+        "accepted": true,
+        "checks": [
+          {
+            "code": "edit.boundary",
+            "rule": "only the target's implementation module changes",
+            "status": "pass"
+          },
+          {
+            "code": "runtime.load",
+            "rule": "the application loads and answers appport.manifest@1",
+            "status": "pass"
+          },
+          {
+            "code": "contract.identity",
+            "rule": "the published contract is unchanged (contractDigest sha256:4f6660b5135b)",
+            "status": "pass",
+            "notes": [
+              "contractDigest sha256:4f6660b5135b0053debb5f16c4ce458cae6d62832a841672483b69e880c997ca"
+            ]
+          },
+          {
+            "code": "contract.valid",
+            "rule": "the published contract has no validation errors",
+            "status": "pass"
+          },
+          {
+            "code": "output.conformance",
+            "rule": "every output observed conforms to its declared output schema",
+            "status": "pass",
+            "notes": [
+              "9 output(s) conform"
+            ]
+          },
+          {
+            "code": "failures.declared",
+            "rule": "customers.lookup@1 fails only with its declared failure codes (NOT_FOUND)",
+            "status": "pass"
+          },
+          {
+            "code": "behavior.regression",
+            "rule": "answers on existing state are unchanged for customers.lookup@1, billing.contact@1",
+            "status": "pass",
+            "notes": [
+              "8 answer(s) on existing state unchanged"
+            ]
+          },
+          {
+            "code": "verification",
+            "rule": "customers.register@1: declared verification (customer-readable, registered-event) is not contradicted and every state method confirms",
+            "status": "pass",
+            "notes": [
+              "customers.register@1#customer-readable confirmed (establishes)",
+              "customers.register@1#registered-event confirmed (corroborates)"
+            ]
+          }
+        ]
+      },
+      "evidence": [
+        "customers.register@1: verified"
+      ]
+    }
+  ],
+  "refusedCompletions": 0,
+  "modelCalls": 9,
+  "inputTokens": 37067,
+  "outputTokens": 1372,
+  "tokensEstimated": false,
+  "discoveryBytes": 10426,
+  "toolResultBytes": 14835,
+  "applicationRuns": 4,
+  "envelopes": 30,
+  "rollbacks": 0,
+  "acceptedFiles": [
+    "src/handlers/customers.lookup.mjs"
+  ],
+  "wallMs": 28652,
+  "startedAt": "2026-10-16T00:40:33.816Z"
+}

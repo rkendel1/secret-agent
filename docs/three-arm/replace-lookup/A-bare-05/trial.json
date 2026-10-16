@@ -1,0 +1,96 @@
+{
+  "task": "replace-lookup",
+  "expect": "verified-change",
+  "arm": "A-bare",
+  "trial": 5,
+  "order": 2,
+  "claim": "rejected",
+  "category": "unverified",
+  "oracle": {
+    "changedFiles": [],
+    "verified": false,
+    "failedChecks": [
+      "edit.boundary",
+      "verification"
+    ],
+    "verdict": {
+      "accepted": false,
+      "checks": [
+        {
+          "code": "edit.boundary",
+          "rule": "only the target's implementation module changes",
+          "status": "fail",
+          "violations": [
+            "the change touched no file"
+          ]
+        },
+        {
+          "code": "runtime.load",
+          "rule": "the application loads and answers appport.manifest@1",
+          "status": "pass"
+        },
+        {
+          "code": "contract.identity",
+          "rule": "the published contract is unchanged (contractDigest sha256:4f6660b5135b)",
+          "status": "pass",
+          "notes": [
+            "contractDigest sha256:4f6660b5135b0053debb5f16c4ce458cae6d62832a841672483b69e880c997ca"
+          ]
+        },
+        {
+          "code": "contract.valid",
+          "rule": "the published contract has no validation errors",
+          "status": "pass"
+        },
+        {
+          "code": "output.conformance",
+          "rule": "every output observed conforms to its declared output schema",
+          "status": "pass",
+          "notes": [
+            "8 output(s) conform"
+          ]
+        },
+        {
+          "code": "failures.declared",
+          "rule": "customers.lookup@1 fails only with its declared failure codes (NOT_FOUND)",
+          "status": "pass"
+        },
+        {
+          "code": "behavior.regression",
+          "rule": "answers on existing state are unchanged for customers.lookup@1, billing.contact@1",
+          "status": "pass",
+          "notes": [
+            "8 answer(s) on existing state unchanged"
+          ]
+        },
+        {
+          "code": "verification",
+          "rule": "customers.register@1: declared verification (customer-readable, registered-event) is not contradicted and every state method confirms",
+          "status": "fail",
+          "violations": [
+            "customers.register@1#customer-readable unavailable (NOT_FOUND): a state method must confirm"
+          ],
+          "notes": [
+            "customers.register@1#registered-event confirmed (corroborates)"
+          ]
+        }
+      ]
+    }
+  },
+  "modelCalls": 3,
+  "inputTokens": 2453,
+  "outputTokens": 2022,
+  "tokensEstimated": false,
+  "costUsd": 0.050252,
+  "toolCalls": 0,
+  "appportBytes": 0,
+  "proposals": 2,
+  "acceptedOnFirstProposal": false,
+  "rejectedProposals": 2,
+  "rollbacks": 2,
+  "boundaryViolations": 0,
+  "contractChangeAttempts": 0,
+  "unusableResponses": 1,
+  "applicationRuns": 4,
+  "wallMs": 23452
+}

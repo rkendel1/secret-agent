@@ -1,0 +1,30 @@
+{
+  "task": "unverifiable-contract",
+  "expect": "limitation",
+  "arm": "C-native",
+  "trial": 1,
+  "order": 1,
+  "claim": "limitation",
+  "category": "correct-limitation",
+  "reason": "customers.lookup@1 cannot be switched safely because the change could not be verified. Its contract declares no verification methods and marks evidence as not establishable ('establishable': false). Effect, integration and verification are all listed as unknowns. The only check left would be comparing against earlier answers. That check is not a valid test here, because changing the data source from the legacy CRM export (src/legacy/crm.mjs, which maps cust_id/full_name/mail/level via TIERS/created) to the customer store is meant to change where answers come from. Any differences, such as tier mapping, 'since' timestamp encoding, or records present in only one source, could not be told apart from regressions. There is also an effect issue: the contract declares no effect, and reading from a different store could change what agents may assume. What's needed first is a contract-level verification method for customers.lookup@1, for example a fixture-based or store-backed conformance check covering the output schema, the tier enum and the ISO-8601 'since' field, and the not-found failure. Ideally the contract would also declare the effect as read-only. With that in place, the handler src/handlers/customers.lookup.mjs can be rewritten to read from the customer store and verified.",
+  "oracle": {
+    "changedFiles": [],
+    "failedChecks": []
+  },
+  "modelCalls": 4,
+  "inputTokens": 7548,
+  "outputTokens": 837,
+  "tokensEstimated": false,
+  "costUsd": 0.046932,
+  "toolCalls": 4,
+  "appportBytes": 4596,
+  "proposals": 0,
+  "acceptedOnFirstProposal": false,
+  "rejectedProposals": 0,
+  "rollbacks": 0,
+  "boundaryViolations": 0,
+  "contractChangeAttempts": 0,
+  "unusableResponses": 0,
+  "applicationRuns": 2,
+  "wallMs": 17798
+}

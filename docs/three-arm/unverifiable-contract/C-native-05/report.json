@@ -1,0 +1,49 @@
+{
+  "outcome": "limitation",
+  "reason": "This change cannot be verified, so I have not proposed it. The contract for customers.lookup@1 declares no verification methods (evidence.methods is empty and evidence.establishable is false). It also lists 'verification', 'effect' and 'integration' as unknowns, and the inspect result shows no verification entries. The data-source switch would be a real change: the handler in src/handlers/customers.lookup.mjs currently imports src/legacy/crm.mjs. Without a declared way to check the output, nothing could confirm that a store-backed implementation returns the same customers. That covers the matching customerId, name, email, tier limited to standard/gold/platinum, and 'since' as an ISO-8601 date-time. It also covers the effect, which the contract leaves undeclared. To make this possible, the contract owner would first need to add verification evidence to customers.lookup@1, such as example inputs with expected outputs or a comparison method against the legacy source. They would also need to declare its effect. That is a contract change, which I may not make. Once the contract has verification, the implementation can be switched to the customer store and checked.",
+  "model": "anthropic:claude-opus-5-5 via https://api.anthropic.com/v1/messages",
+  "turns": [
+    {
+      "turn": 1,
+      "usage": {
+        "input_tokens": 622,
+        "output_tokens": 77,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "inspect",
+      "resultBytes": 3020,
+      "durationMs": 1928
+    },
+    {
+      "turn": 2,
+      "usage": {
+        "input_tokens": 1811,
+        "output_tokens": 622,
+        "estimated": false
+      },
+      "stopReason": "end_turn",
+      "action": "limitation",
+      "resultBytes": 22,
+      "durationMs": 7469
+    }
+  ],
+  "toolCalls": {
+    "inspect": 1,
+    "limitation": 1
+  },
+  "proposals": [],
+  "refusedCompletions": 0,
+  "modelCalls": 2,
+  "inputTokens": 2433,
+  "outputTokens": 699,
+  "tokensEstimated": false,
+  "discoveryBytes": 3020,
+  "toolResultBytes": 3042,
+  "applicationRuns": 1,
+  "envelopes": 1,
+  "rollbacks": 0,
+  "acceptedFiles": [],
+  "wallMs": 9861,
+  "startedAt": "2026-10-16T00:45:54.443Z"
+}
