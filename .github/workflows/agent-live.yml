@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       legs:
-        description: Which legs to run (comma-separated) - gateway, remote, local
+        description: Which legs to run (comma-separated) - gateway, coding, remote, local
         default: gateway
       trials:
         description: Trials per arm and project
@@ -18,6 +18,9 @@ on:
       gateway_model:
         description: Vercel AI Gateway model for the gateway leg (needs the AI_GATEWAY_API_KEY secret)
         default: anthropic/claude-opus-5.5
+      min_success:
+        description: Coding leg - fail when the observed arm's success rate is below this (0..1)
+        default: "0.5"
       remote_model:
         description: Anthropic model for the remote leg (needs the ANTHROPIC_API_KEY secret)
         default: claude-opus-5-5
@@ -124,3 +127,61 @@ jobs:
             target/closed-loop/eval-*/*/report.json
             target/closed-loop/eval-*/*/run.jsonl
             target/closed-loop/eval-*/*/accepted.diff
+
+  coding:
+    # The coding-agent evaluation (no AppPort) through the Vercel AI Gateway.
+    if: contains(inputs.legs, 'coding')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
+      MODEL: ${{ inputs.gateway_model || 'anthropic/claude-opus-5.5' }}
+      TRIALS: ${{ inputs.trials || '10' }}
+      MIN_SUCCESS: ${{ inputs.min_success || '0.5' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require the key
+        run: test -n "$AI_GATEWAY_API_KEY" || { echo "set the AI_GATEWAY_API_KEY repository secret"; exit 1; }
+      - name: Check the model exists on the gateway
+        run: |
+          curl -fsS https://ai-gateway.vercel.sh/v1/models -H "Authorization: Bearer $AI_GATEWAY_API_KEY" > models.json
+          echo "Anthropic models on the gateway:"; jq -r '.data[].id' models.json | grep -i anthropic || true
+          if jq -e --arg m "$MODEL" '.data | any(.id == $m)' models.json > /dev/null; then
+            echo "using $MODEL"
+          else
+            # The gateway may spell versions differently (5.5 vs 5-5). Accept exactly one
+            # spelling of the requested family/version; anything else stops before any spend.
+            family=$(echo "$MODEL" | sed -E 's#^.*/##; s#[.-]#[.-]#g')
+            matches=$(jq -r '.data[].id' models.json | grep -E "^anthropic/${family}$" || true)
+            if [ "$(echo "$matches" | grep -c .)" = 1 ]; then
+              echo "using $matches (requested $MODEL)"; echo "MODEL=$matches" >> "$GITHUB_ENV"
+            else
+              echo "model $MODEL is not offered by the gateway (candidates: ${matches:-none})"; exit 1
+            fi
+          fi
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: scripts/check-coding-fixtures.sh
+      - run: |
+          cargo run --quiet -p appport-agent -- code-eval --tasks fixtures/coding \
+            --config examples/models/vercel-gateway.json --model "$MODEL" \
+            --trials "$TRIALS" --arms observed,minimal --out target/coding-live \
+            --min-success "$MIN_SUCCESS" --require-test-runs --quiet
+      - name: Results
+        if: always()
+        run: |
+          f=target/coding-live/coding-eval.md
+          [ -f "$f" ] && { cat "$f"; cat "$f" >> "$GITHUB_STEP_SUMMARY"; }
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-coding
+          path: |
+            target/coding-live/coding-eval.*
+            target/coding-live/*/*/report.json
+            target/coding-live/*/*/run.jsonl
+            target/coding-live/*/*/accepted.diff
+            target/coding-live/*/*/hidden.txt

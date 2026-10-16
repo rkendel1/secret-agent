@@ -37,6 +37,10 @@ jobs:
       # Fails unless every stage refuses or accepts as asserted, including a verified,
       # accepted change on rkendel1/appport-services after `npx appport init`.
       - run: scripts/closed-loop-test.sh
+      # The coding-agent path (no AppPort): fixtures are sound, and the loop is judged
+      # by each project's own tests plus hidden acceptance tests.
+      - run: scripts/check-coding-fixtures.sh
+      - run: cargo run --quiet -p appport-agent -- code-eval --tasks fixtures/coding --provider scripted --trials 1 --arms observed --out target/coding-scripted --quiet --min-success 1 --require-test-runs
       - if: always()
         uses: actions/upload-artifact@v4
         with:

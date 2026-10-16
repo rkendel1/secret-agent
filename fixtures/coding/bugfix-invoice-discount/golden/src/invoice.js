@@ -1,0 +1,24 @@
+import { roundCents } from "./money.js";
+
+/** The price of one line: unit price times quantity, in currency units. */
+export function lineTotal(line) {
+  return roundCents(line.unitPrice * line.quantity);
+}
+
+/** The sum of every line, before tax and discount. */
+export function subtotal(invoice) {
+  return roundCents(invoice.lines.reduce((sum, line) => sum + lineTotal(line), 0));
+}
+
+/**
+ * What the customer pays.
+ *
+ * `discountPercent` is a percentage (10 means 10%) taken off the subtotal;
+ * `taxRate` is a fraction (0.2 means 20%) applied after the discount.
+ */
+export function total(invoice) {
+  const sub = subtotal(invoice);
+  const discount = invoice.discountPercent ? sub * (invoice.discountPercent / 100) : 0;
+  const taxable = sub - discount;
+  return roundCents(taxable * (1 + (invoice.taxRate ?? 0)));
+}

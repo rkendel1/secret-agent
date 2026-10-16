@@ -1,0 +1,8 @@
+{
+  "id": "bugfix-invoice-discount",
+  "kind": "bug-fix",
+  "intent": "Customers with a percentage discount on their invoice are being charged the wrong total. Fix the invoice total.",
+  "test": ["npm", "test", "--silent"],
+  "hidden": ["node", "--test", "hidden/*.test.js"],
+  "intendedFiles": ["src/invoice.js"]
+}

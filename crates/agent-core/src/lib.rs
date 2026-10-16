@@ -19,6 +19,7 @@
 
 pub mod appport;
 pub mod conformance;
+pub mod generic;
 pub mod observe;
 pub mod plan;
 pub mod verify;

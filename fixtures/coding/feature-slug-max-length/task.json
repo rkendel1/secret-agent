@@ -1,0 +1,8 @@
+{
+  "id": "feature-slug-max-length",
+  "kind": "feature",
+  "intent": "Post URLs get too long. Add a maxLength option to slugify, so slugify(text, { maxLength }) returns a slug of at most maxLength characters that never ends with a hyphen and does not cut a word in half when it can avoid it.",
+  "test": ["npm", "test", "--silent"],
+  "hidden": ["node", "--test", "hidden/*.test.js"],
+  "intendedFiles": ["src/text/slug.js"]
+}
